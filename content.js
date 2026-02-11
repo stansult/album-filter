@@ -90,17 +90,46 @@
         display: grid;
         gap: 8px;
       }
+      #${PANEL_ID} .af-input-wrap {
+        position: relative;
+      }
       #${PANEL_ID} .af-input {
         width: 100%;
         box-sizing: border-box;
         border: 1px solid #cbd5e1;
         border-radius: 8px;
-        padding: 7px 9px;
+        padding: 7px 30px 7px 9px;
         font-size: 13px;
+      }
+      #${PANEL_ID} .af-input-clear {
+        position: absolute;
+        top: 50%;
+        right: 8px;
+        transform: translateY(-50%);
+        border: 0;
+        background: transparent;
+        color: #64748b;
+        font-size: 16px;
+        line-height: 1;
+        width: 20px;
+        height: 20px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+      }
+      #${PANEL_ID} .af-input-clear:hover {
+        background: #e2e8f0;
+        color: #334155;
+      }
+      #${PANEL_ID} .af-input-clear:disabled {
+        cursor: default;
+        opacity: 0.35;
       }
       #${PANEL_ID} .af-row {
         display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 6px;
       }
       #${PANEL_ID} .af-btn {
@@ -142,6 +171,7 @@
       #${PANEL_ID} .af-help {
         color: #64748b;
         font-size: 11px;
+        white-space: pre-line;
       }
       .${MATCHED_CLASS} {
         display: none !important;
@@ -246,17 +276,20 @@
     panel.innerHTML = `
       <div class="af-head">
         <div class="af-title">Album Filter</div>
-        <button type="button" class="af-close" aria-label="Close panel">x</button>
+        <button type="button" class="af-close" aria-label="Close panel">×</button>
       </div>
       <div class="af-body">
-        <input class="af-input" type="text" placeholder="Filter albums by title...">
+        <div class="af-input-wrap">
+          <input class="af-input" type="text" placeholder="Filter albums by title...">
+          <button type="button" class="af-input-clear" aria-label="Clear filter">×</button>
+        </div>
         <div class="af-row">
           <button type="button" class="af-btn" data-action="scan">Refresh</button>
           <button type="button" class="af-btn" data-action="auto">Auto-load</button>
           <button type="button" class="af-btn secondary" data-action="stop">Stop</button>
-          <button type="button" class="af-btn secondary" data-action="clear">Clear</button>
         </div>
-        <div class="af-help">Refresh rescans visible albums. Auto-load fetches more pages.</div>
+        <div class="af-help">- Refresh rescans visible albums.
+- Auto-load fetches more pages.</div>
         <div class="af-status" aria-live="polite">Ready</div>
       </div>
     `;
@@ -268,7 +301,7 @@
     const scanBtn = panel.querySelector('button[data-action="scan"]');
     const autoBtn = panel.querySelector('button[data-action="auto"]');
     const stopBtn = panel.querySelector('button[data-action="stop"]');
-    const clearBtn = panel.querySelector('button[data-action="clear"]');
+    const clearBtn = panel.querySelector('.af-input-clear');
 
     function isExternalAutoLoading() {
       if (!isTestPlaygroundPage()) return false;
@@ -452,13 +485,16 @@
         stopAutoScan('Auto-load stopped.');
         return;
       }
-      if (action === 'clear') {
-        state.query = '';
-        input.value = '';
-        applyFilter();
-        setStatus(`Filter cleared. Albums loaded: ${state.albums.length}`);
-        syncButtonState();
-      }
+    });
+
+    clearBtn.addEventListener('click', () => {
+      if (!state.query) return;
+      state.query = '';
+      input.value = '';
+      applyFilter();
+      setStatus(`Filter cleared. Albums loaded: ${state.albums.length}`);
+      syncButtonState();
+      input.focus({ preventScroll: true });
     });
 
     input.addEventListener('input', () => {
