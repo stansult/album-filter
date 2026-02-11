@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Album Filter",
-  "version": "0.1.0",
-  "description": "Filter and organize albums on supported pages.",
+  "version": "0.1.1",
+  "description": "Add in-page text filtering and auto-loading controls to long album pages.",
   "permissions": [
     "activeTab",
     "scripting",
