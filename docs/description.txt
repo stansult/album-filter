@@ -23,4 +23,9 @@ Product direction:
 
 There is currently no options page; behavior is controlled from the in-page panel.
 
+Privacy:
+- Album content is processed locally in your browser to provide filtering.
+- No user data is transmitted to our servers.
+- No user data is sold or shared with third parties.
+
 Album Filter is not affiliated with or endorsed by Meta/Facebook.
