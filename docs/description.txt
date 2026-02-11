@@ -1,9 +1,14 @@
-Album Filter helps you filter and organize albums on supported pages.
+Album Filter adds in-page text filtering to album pages on sites that lack a built-in album search.
 
-How it works
+First supported site (proof of concept): Facebook album pages.
 
-- Click the extension icon to run on the current tab
-- Apply your filter logic
-- Get a cleaner view based on your settings
+Why it helps:
+- Large album lists are hard to navigate
+- Browser Find (Cmd/Ctrl + F) only works for content currently loaded
+- Album Filter is built to make album discovery faster in long lists
 
-Use Options to configure behavior and strictness.
+Current scope:
+- User-triggered filtering workflow in the browser
+- Facebook support first, with room to add more supported sites over time
+
+Album Filter is not affiliated with or endorsed by Meta/Facebook.
