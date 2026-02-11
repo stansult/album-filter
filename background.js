@@ -13,7 +13,7 @@ chrome.runtime.onInstalled.addListener(() => {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!message || message.action !== 'run') return;
 
-  const tabId = sender?.tab?.id;
+  const tabId = message.tabId || sender?.tab?.id;
   if (!tabId) {
     sendResponse({ ok: false, error: 'No active tab context' });
     return;
