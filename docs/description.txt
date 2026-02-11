@@ -1,0 +1,9 @@
+Album Filter helps you filter and organize albums on supported pages.
+
+How it works
+
+- Click the extension icon to run on the current tab
+- Apply your filter logic
+- Get a cleaner view based on your settings
+
+Use Options to configure behavior and strictness.

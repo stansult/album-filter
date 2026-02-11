@@ -1,0 +1,39 @@
+Project: album-filter (Chrome extension starter)
+
+Goal of this handoff:
+Provide a reusable extension scaffold that can be moved to a new repository and extended.
+
+What is generic and ready:
+- MV3 manifest + background service worker + popup + options + content stub.
+- `chrome.storage.sync` preference wiring (`enabled`, `strictMode`).
+- Packaging scripts in `package.json`.
+
+Description workflow (Chrome Web Store):
+- Source of truth: `docs/description.txt`.
+- Packaging scripts compare `docs/description.txt` against `dist/.description-last`.
+- If changed, packaging writes:
+  - `dist/description-to-upload.txt`
+  - `dist/.description-last`
+- `description-to-upload.txt` is intentionally persistent so you can upload it manually.
+- After uploading in CWS, you may delete `dist/description-to-upload.txt`.
+
+Packaging commands:
+- `npm run package`
+  - Creates `dist/album-filter-<version>.zip`.
+- `npm run package:patch`
+  - Increments patch version in `manifest.json`, then packages.
+
+Suggested next-thread priorities:
+1. Replace `content.js` stub with real filtering logic.
+2. Update manifest permissions/host access as needed.
+3. Rewrite popup/options UI for product-specific workflows.
+4. Keep `docs/description.txt` concise and non-keyword-stuffed for CWS policy compliance.
+
+Workflow rules:
+- Don't start implementing / changing code unless you got request from me, or you suggested changes and I told you to start
+- Keep this handoff file updated whenever process changes so a fresh thread can resume without context loss.
+- Before committing, review the full diff and draft a commit message that covers all included changes.
+- Use default push target `origin/main` unless specified otherwise.
+- Do not commit immediately after a reported fix until key regressions are rechecked.
+- When labels/terminology change, keep docs in sync (at minimum `README.md` and `docs/description.txt`).
+- Re-read edited files after changes to confirm final file content is correct.
