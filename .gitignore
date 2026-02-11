@@ -2,3 +2,8 @@ dist/
 node_modules/
 *.zip
 .DS_Store
+test/fb/
+screenshots/
+
+# Local Netlify folder
+.netlify
