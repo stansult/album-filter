@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800" role="img" aria-label="Generic indoor placeholder">
+  <rect width="800" height="800" fill="#f4efe8"/>
+  <rect x="80" y="140" width="640" height="430" rx="12" fill="#d7c8b4"/>
+  <rect x="130" y="190" width="230" height="160" rx="8" fill="#9ab8c7"/>
+  <rect x="390" y="190" width="280" height="330" rx="8" fill="#b08f72"/>
+  <rect x="130" y="380" width="230" height="140" rx="8" fill="#b6cc9a"/>
+  <rect x="120" y="610" width="560" height="80" rx="10" fill="#8b715a"/>
+  <circle cx="500" cy="352" r="56" fill="#f5dcb0"/>
+  <rect x="465" y="420" width="68" height="92" rx="20" fill="#d4b391"/>
+  <rect x="455" y="500" width="88" height="100" rx="18" fill="#6f8fa6"/>
+</svg>

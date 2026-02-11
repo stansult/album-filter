@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800" role="img" aria-label="Generic abstract placeholder">
+  <rect width="800" height="800" fill="#f0e8ff"/>
+  <circle cx="180" cy="160" r="150" fill="#c9b8ff"/>
+  <circle cx="620" cy="200" r="170" fill="#b6f2ef"/>
+  <circle cx="240" cy="570" r="190" fill="#ffd8c2"/>
+  <circle cx="610" cy="560" r="180" fill="#ffe8a8"/>
+  <path d="M0 470Q180 420 300 530T640 590T800 560V800H0Z" fill="#b2b7ff"/>
+  <path d="M0 600Q180 550 360 650T800 690V800H0Z" fill="#8f97ff"/>
+</svg>

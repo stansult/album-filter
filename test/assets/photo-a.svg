@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800" role="img" aria-label="Generic landscape placeholder">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#72a7f2"/>
+      <stop offset="100%" stop-color="#cfe3ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="800" fill="url(#sky)"/>
+  <circle cx="624" cy="146" r="70" fill="#fff7b6"/>
+  <path d="M0 540L180 410L320 522L466 382L628 522L800 418V800H0Z" fill="#5f8d5d"/>
+  <path d="M0 604L160 510L294 612L466 486L648 620L800 552V800H0Z" fill="#3f6a3f"/>
+</svg>

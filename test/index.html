@@ -2,10 +2,132 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Album Filter Test Stub</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Album Filter Playground</title>
+    <link rel="stylesheet" href="styles.css?v=1">
   </head>
   <body>
-    <h1>Album Filter Test Stub</h1>
-    <p>Replace this page with project-specific test scenarios.</p>
+    <main class="page">
+      <h1>Album Filter Playground</h1>
+      <p class="intro">
+        This page simulates a Facebook-like albums list with infinite loading so Album Filter can be tested locally.
+      </p>
+
+      <details class="howto">
+        <summary>How to use this test page</summary>
+        <ol>
+          <li>Configure total albums, batch size, and loading delay.</li>
+          <li>Click <strong>Generate list</strong> to create a new dataset.</li>
+          <li>Scroll to trigger infinite loading, or use load controls.</li>
+          <li>Run the extension on this page and test filtering behavior.</li>
+        </ol>
+      </details>
+
+      <section class="configure-section">
+        <h2>Configure test album list</h2>
+
+        <div class="controls-grid">
+          <label class="control">
+            <span>Total albums</span>
+            <input id="total-albums" type="number" min="20" max="5000" value="780">
+          </label>
+
+          <label class="control">
+            <span>Batch size</span>
+            <input id="batch-size" type="number" min="6" max="120" value="24">
+          </label>
+
+          <label class="control">
+            <span>Min load delay (ms)</span>
+            <input id="min-delay" type="number" min="100" max="5000" value="1000">
+          </label>
+
+          <label class="control">
+            <span>Max load delay (ms)</span>
+            <input id="max-delay" type="number" min="100" max="8000" value="2000">
+          </label>
+
+          <label class="control">
+            <span>Desktop columns</span>
+            <input id="desktop-columns" type="number" min="4" max="8" value="6">
+          </label>
+
+          <label class="control">
+            <span>Tricky names (%)</span>
+            <input id="tricky-percent" type="number" min="0" max="100" value="18">
+          </label>
+
+          <label class="control">
+            <span>Name style</span>
+            <select id="name-style">
+              <option value="mixed">Mixed (realistic)</option>
+              <option value="city-year">City + year</option>
+              <option value="events">Events/family</option>
+              <option value="tech">Tech/screenshot style</option>
+            </select>
+          </label>
+
+          <label class="control">
+            <span>Random seed</span>
+            <input id="seed" type="text" value="album-filter-poc">
+          </label>
+        </div>
+
+        <div class="control-row">
+          <label class="check">
+            <input id="include-create" type="checkbox" checked>
+            Include "Create album" card
+          </label>
+          <label class="check">
+            <input id="show-menu" type="checkbox" checked>
+            Show "More options" dots on cards
+          </label>
+        </div>
+
+        <div class="actions">
+          <button id="generate" type="button">Generate list</button>
+          <button id="load-next" type="button">Load next batch</button>
+          <button id="auto-load" type="button" aria-pressed="false">Auto-load all</button>
+          <button id="reset-scroll" type="button">Reset scroll</button>
+        </div>
+
+        <div class="notes">
+          <div class="notes-title">Notes:</div>
+          <ul class="notes-list">
+            <li>This intentionally simulates a long, paged album list with 1-2 second delays.</li>
+            <li>Album cards expose stable test attributes (for extension integration tests).</li>
+            <li>List completion is represented by no more batches plus an explicit test-only end marker.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="test-section">
+        <h2>Test album list</h2>
+        <div class="status-bar" id="status" aria-live="polite">Idle</div>
+
+        <div class="fb-shell" id="fb-shell">
+          <div class="fb-header-row">
+            <h3>Photos</h3>
+            <div class="fb-header-actions">
+              <button type="button" class="fb-action-link">Add photos/video</button>
+              <button type="button" class="fb-icon-btn" aria-label="More">...</button>
+            </div>
+          </div>
+
+          <div class="fb-tabs" role="tablist" aria-label="Photo sections">
+            <button type="button" class="tab" aria-selected="false">Photos of You</button>
+            <button type="button" class="tab" aria-selected="false">Your photos</button>
+            <button type="button" class="tab active" aria-selected="true">Albums</button>
+          </div>
+
+          <div class="album-grid" id="album-grid" data-af-album-grid></div>
+          <div class="loading-layer hidden" id="loading-layer" data-af-loading></div>
+          <div class="end-marker hidden" id="end-marker" data-af-end>End of albums in test dataset</div>
+          <div class="scroll-sentinel" id="scroll-sentinel" aria-hidden="true"></div>
+        </div>
+      </section>
+    </main>
+
+    <script src="script.js?v=1"></script>
   </body>
 </html>
