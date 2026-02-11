@@ -1,15 +1,12 @@
 (() => {
-  const DEFAULT_PREFS = {
-    enabled: true,
-    strictMode: false
-  };
-
   const PANEL_ID = 'album-filter-panel';
   const STYLE_ID = 'album-filter-style';
   const MATCHED_CLASS = 'album-filter-card-hidden';
+  const MATCH_CLASS = 'album-filter-card-match';
   const NON_ALBUM_HIDDEN_CLASS = 'album-filter-non-album-hidden';
   const SUPPORTED_PATH = /\/photos_albums(?:[/?#]|$)/i;
   const APP_VERSION = '1.1.0';
+  const MAX_STAGNANT_CYCLES = 3;
   const TOAST_INFO_BG = 'rgba(20, 40, 70, 0.75)';
   const TOAST_SUCCESS_BG = 'rgba(20, 70, 40, 0.75)';
   const TOAST_EXPIRED_BG = 'rgba(60, 60, 60, 0.75)';
@@ -17,6 +14,24 @@
 
   function normalize(text) {
     return String(text || '').replace(/\s+/g, ' ').trim().toLowerCase();
+  }
+
+  function parseQuery(rawQuery) {
+    const trimmed = String(rawQuery || '').trim();
+    const doubleQuoted = trimmed.length >= 2 && trimmed.startsWith('"') && trimmed.endsWith('"');
+    const singleQuoted = trimmed.length >= 2 && trimmed.startsWith("'") && trimmed.endsWith("'");
+    if (doubleQuoted || singleQuoted) {
+      return {
+        mode: 'phrase',
+        phrase: normalize(trimmed.slice(1, -1))
+      };
+    }
+    const norm = normalize(trimmed);
+    const tokens = norm ? norm.split(' ').filter(Boolean) : [];
+    return {
+      mode: 'tokens',
+      tokens
+    };
   }
 
   function isSupportedPage() {
@@ -31,14 +46,6 @@
 
   function isTestPlaygroundPage() {
     return !!document.querySelector('[data-af-album-grid]');
-  }
-
-  function getPrefs() {
-    return new Promise(resolve => {
-      chrome.storage.sync.get(DEFAULT_PREFS, prefs => {
-        resolve({ ...DEFAULT_PREFS, ...prefs });
-      });
-    });
   }
 
   function ensureStyles() {
@@ -168,7 +175,8 @@
       }
       #${PANEL_ID} .af-status {
         color: #334155;
-        font-size: 12px;
+        font-size: 14px;
+        font-weight: 600;
       }
       #${PANEL_ID} .af-status.warn {
         color: #b45309;
@@ -183,6 +191,13 @@
       }
       .${NON_ALBUM_HIDDEN_CLASS} {
         display: none !important;
+      }
+      html[data-af-query-active="true"] .${MATCH_CLASS} {
+        opacity: 1 !important;
+      }
+      html[data-af-query-active="true"] div[style*="min-width:168px"]:has(a[href*="/media/set/?set"]),
+      html[data-af-query-active="true"] div[style*="min-width: 168px"]:has(a[href*="/media/set/?set"]) {
+        opacity: 0.2 !important;
       }
       [data-af-layout-root][data-af-compact="true"] {
         display: grid !important;
@@ -292,9 +307,8 @@
     return anchor;
   }
 
-  function createApp(prefs) {
+  function createApp() {
     const state = {
-      prefs,
       query: '',
       albums: [],
       autoScanActive: false,
@@ -363,6 +377,25 @@
     function setStatus(text, warn) {
       status.textContent = text;
       status.classList.toggle('warn', !!warn);
+    }
+
+    function setQueryActiveMode(enabled) {
+      document.documentElement.setAttribute('data-af-query-active', enabled ? 'true' : 'false');
+      document.querySelectorAll(`.${MATCH_CLASS}`).forEach(node => {
+        node.classList.remove(MATCH_CLASS);
+      });
+      if (!enabled) {
+        state.albums.forEach(album => {
+          album.card.style.removeProperty('opacity');
+        });
+      }
+    }
+
+    function hasActiveQuery() {
+      const parsedQuery = parseQuery(state.query);
+      return parsedQuery.mode === 'phrase'
+        ? !!parsedQuery.phrase
+        : parsedQuery.tokens.length > 0;
     }
 
     function clearCompactLayout() {
@@ -465,26 +498,39 @@
     }
 
     function applyFilter() {
-      const q = normalize(state.query);
+      const parsedQuery = parseQuery(state.query);
+      const hasQuery = parsedQuery.mode === 'phrase'
+        ? !!parsedQuery.phrase
+        : parsedQuery.tokens.length > 0;
       let shown = 0;
+      setQueryActiveMode(hasQuery);
 
       state.albums.forEach(album => {
         let matches = true;
-        if (q) {
-          if (state.prefs.strictMode) {
-            matches = album.titleNorm === q;
-          } else {
-            matches = album.titleNorm.includes(q);
-          }
+        if (hasQuery) {
+          album.card.style.setProperty('opacity', '0.2', 'important');
+        } else {
+          album.card.style.removeProperty('opacity');
+        }
+        if (parsedQuery.mode === 'phrase') {
+          matches = !!parsedQuery.phrase && album.titleNorm.includes(parsedQuery.phrase);
+        } else if (parsedQuery.tokens.length) {
+          matches = parsedQuery.tokens.every(token => album.titleNorm.includes(token));
         }
 
         album.card.classList.toggle(MATCHED_CLASS, !matches);
+        if (hasQuery && matches) {
+          album.card.classList.add(MATCH_CLASS);
+          album.card.style.setProperty('opacity', '1', 'important');
+        } else {
+          album.card.classList.remove(MATCH_CLASS);
+        }
         if (matches) shown += 1;
       });
 
       setStatus(`Albums loaded: ${state.albums.length} • Showing: ${shown}`);
-      setTestScrollLoadGuard(!!q && !state.autoScanActive);
-      applyCompactLayout(!!q);
+      setTestScrollLoadGuard(hasQuery && !state.autoScanActive);
+      applyCompactLayout(hasQuery);
     }
 
     function scanAndFilter() {
@@ -552,7 +598,7 @@
         }
 
         state.stagnantCycles += 1;
-        if (state.stagnantCycles >= 10) {
+        if (state.stagnantCycles >= MAX_STAGNANT_CYCLES) {
           stopAutoScan(`Auto-scan stopped. No new albums after ${state.stagnantCycles} checks.`);
         }
       }, 1300);
@@ -565,21 +611,29 @@
       }, 250);
     }
 
-    const closeBtn = panel.querySelector('.af-close');
-    closeBtn.addEventListener('click', () => {
+    function closePanel() {
       stopAutoScan();
       if (state.observer) state.observer.disconnect();
       if (state.rescanTimer) clearTimeout(state.rescanTimer);
       clearCompactLayout();
       setTestScrollLoadGuard(false);
+      setQueryActiveMode(false);
       const style = document.getElementById(STYLE_ID);
       if (style) style.remove();
       document.querySelectorAll(`.${MATCHED_CLASS}`).forEach(node => {
         node.classList.remove(MATCHED_CLASS);
       });
+      state.albums.forEach(album => {
+        album.card.style.removeProperty('opacity');
+      });
       panel.remove();
       delete window.__albumFilterApp;
       showToast('Album Filter closed.', { level: 'expired', duration: 1600 });
+    }
+
+    const closeBtn = panel.querySelector('.af-close');
+    closeBtn.addEventListener('click', () => {
+      closePanel();
     });
 
     panel.addEventListener('click', event => {
@@ -622,8 +676,17 @@
       applyFilter();
       syncButtonState();
     });
+    input.addEventListener('keydown', event => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      closePanel();
+    });
 
     state.observer = new MutationObserver(() => {
+      if (!state.autoScanActive && hasActiveQuery()) {
+        scheduleRescan();
+        return;
+      }
       scheduleRescan();
     });
 
@@ -647,10 +710,14 @@
         if (state.rescanTimer) clearTimeout(state.rescanTimer);
         clearCompactLayout();
         setTestScrollLoadGuard(false);
+        setQueryActiveMode(false);
         const style = document.getElementById(STYLE_ID);
         if (style) style.remove();
         document.querySelectorAll(`.${MATCHED_CLASS}`).forEach(node => {
           node.classList.remove(MATCHED_CLASS);
+        });
+        state.albums.forEach(album => {
+          album.card.style.removeProperty('opacity');
         });
         if (panel && panel.parentNode) panel.remove();
       },
@@ -671,12 +738,6 @@
       return;
     }
 
-    const prefs = await getPrefs();
-    if (!prefs.enabled) {
-      showToast('Album Filter is disabled in Options.', { level: 'error' });
-      return;
-    }
-
     const existingApp = window.__albumFilterApp;
     if (existingApp) {
       if (existingApp.__version === APP_VERSION && typeof existingApp.reactivate === 'function') {
@@ -694,7 +755,7 @@
       delete window.__albumFilterApp;
     }
 
-    window.__albumFilterApp = createApp(prefs);
+    window.__albumFilterApp = createApp();
     showToast('Album Filter injected.', { level: 'success' });
   }
 

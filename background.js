@@ -1,15 +1,3 @@
-const DEFAULT_PREFS = {
-  enabled: true,
-  strictMode: false
-};
-
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.storage.sync.get(DEFAULT_PREFS, current => {
-    const next = { ...DEFAULT_PREFS, ...current };
-    chrome.storage.sync.set(next);
-  });
-});
-
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!message || message.action !== 'run') return;
 
