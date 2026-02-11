@@ -9,6 +9,10 @@
   const MATCHED_CLASS = 'album-filter-card-hidden';
   const SUPPORTED_PATH = /\/photos_albums(?:[/?#]|$)/i;
   const APP_VERSION = '1.1.0';
+  const TOAST_INFO_BG = 'rgba(20, 40, 70, 0.75)';
+  const TOAST_SUCCESS_BG = 'rgba(20, 70, 40, 0.75)';
+  const TOAST_EXPIRED_BG = 'rgba(60, 60, 60, 0.75)';
+  const TOAST_ERROR_BG = 'rgba(120, 30, 30, 0.85)';
 
   function normalize(text) {
     return String(text || '').replace(/\s+/g, ' ').trim().toLowerCase();
@@ -180,29 +184,51 @@
     document.documentElement.appendChild(style);
   }
 
-  function showToast(text, warn) {
+  function showToast(text, options = {}) {
+    const {
+      duration = 1800,
+      level = 'info'
+    } = options;
     const existing = document.getElementById('album-filter-toast');
     if (existing) existing.remove();
 
     const toast = document.createElement('div');
     toast.id = 'album-filter-toast';
     toast.textContent = text;
+    const panel = document.getElementById(PANEL_ID);
+    const toastRight = panel ? `${panel.offsetWidth + 28}px` : '14px';
+    const background = level === 'success'
+      ? TOAST_SUCCESS_BG
+      : level === 'expired'
+        ? TOAST_EXPIRED_BG
+        : level === 'error'
+          ? TOAST_ERROR_BG
+          : TOAST_INFO_BG;
     Object.assign(toast.style, {
       position: 'fixed',
       top: '14px',
-      left: '14px',
-      zIndex: '2147483647',
-      padding: '8px 10px',
-      borderRadius: '8px',
+      right: toastRight,
+      zIndex: '999999',
+      padding: '8px 12px',
+      borderRadius: '4px',
       fontFamily: 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif',
-      fontSize: '12px',
+      fontSize: '13px',
+      lineHeight: '1.3',
       color: '#fff',
-      background: warn ? 'rgba(146,64,14,0.95)' : 'rgba(15,118,110,0.95)',
-      boxShadow: '0 2px 10px rgba(0,0,0,0.25)'
+      background,
+      boxShadow: '0 2px 10px rgba(0,0,0,0.25)',
+      opacity: '0',
+      transition: 'opacity 0.2s ease'
     });
 
     document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 1800);
+    requestAnimationFrame(() => {
+      toast.style.opacity = '1';
+    });
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      setTimeout(() => toast.remove(), 200);
+    }, duration);
   }
 
   function isCreateAnchor(anchor) {
@@ -284,11 +310,11 @@
           <button type="button" class="af-input-clear" aria-label="Clear filter">×</button>
         </div>
         <div class="af-row">
-          <button type="button" class="af-btn" data-action="scan">Refresh</button>
+          <button type="button" class="af-btn" data-action="scan">Rescan loaded</button>
           <button type="button" class="af-btn" data-action="auto">Auto-load</button>
           <button type="button" class="af-btn secondary" data-action="stop">Stop</button>
         </div>
-        <div class="af-help">- Refresh rescans visible albums.
+        <div class="af-help">- Rescan loaded updates the list from albums already in the page DOM.
 - Auto-load fetches more pages.</div>
         <div class="af-status" aria-live="polite">Ready</div>
       </div>
@@ -303,24 +329,32 @@
     const stopBtn = panel.querySelector('button[data-action="stop"]');
     const clearBtn = panel.querySelector('.af-input-clear');
 
-    function isExternalAutoLoading() {
-      if (!isTestPlaygroundPage()) return false;
-      const testAuto = state.testPageAutoButton || document.getElementById('auto-load');
-      return !!testAuto && testAuto.getAttribute('aria-pressed') === 'true';
-    }
-
     function syncButtonState() {
-      const autoLoading = state.autoScanActive || isExternalAutoLoading();
-      autoBtn.setAttribute('aria-pressed', autoLoading ? 'true' : 'false');
-      autoBtn.textContent = autoLoading ? 'Auto-loading' : 'Auto-load';
-      stopBtn.disabled = !autoLoading;
+      autoBtn.setAttribute('aria-pressed', state.autoScanActive ? 'true' : 'false');
+      autoBtn.textContent = state.autoScanActive ? 'Auto-loading' : 'Auto-load';
+      stopBtn.disabled = !state.autoScanActive;
       clearBtn.disabled = !state.query;
       scanBtn.disabled = false;
+    }
+
+    function stopTestPageAutoIfRunning() {
+      if (!isTestPlaygroundPage()) return;
+      const testAuto = document.getElementById('auto-load');
+      if (!testAuto) return;
+      state.testPageAutoButton = testAuto;
+      if (testAuto.getAttribute('aria-pressed') === 'true') testAuto.click();
     }
 
     function setStatus(text, warn) {
       status.textContent = text;
       status.classList.toggle('warn', !!warn);
+    }
+
+    function setTestScrollLoadGuard(enabled) {
+      if (!isTestPlaygroundPage()) return;
+      const sentinel = document.getElementById('scroll-sentinel');
+      if (!sentinel) return;
+      sentinel.style.display = enabled ? 'none' : '';
     }
 
     function collectAlbums() {
@@ -373,6 +407,7 @@
       });
 
       setStatus(`Albums loaded: ${state.albums.length} • Showing: ${shown}`);
+      setTestScrollLoadGuard(!!q && !state.autoScanActive);
     }
 
     function scanAndFilter() {
@@ -458,8 +493,15 @@
       stopAutoScan();
       if (state.observer) state.observer.disconnect();
       if (state.rescanTimer) clearTimeout(state.rescanTimer);
+      setTestScrollLoadGuard(false);
+      const style = document.getElementById(STYLE_ID);
+      if (style) style.remove();
+      document.querySelectorAll(`.${MATCHED_CLASS}`).forEach(node => {
+        node.classList.remove(MATCHED_CLASS);
+      });
       panel.remove();
       delete window.__albumFilterApp;
+      showToast('Album Filter closed.', { level: 'expired', duration: 1600 });
     });
 
     panel.addEventListener('click', event => {
@@ -513,6 +555,7 @@
     });
 
     scanAndFilter();
+    stopTestPageAutoIfRunning();
     syncButtonState();
     setTimeout(() => {
       if (document.body.contains(panel)) input.focus({ preventScroll: true });
@@ -524,12 +567,19 @@
         stopAutoScan();
         if (state.observer) state.observer.disconnect();
         if (state.rescanTimer) clearTimeout(state.rescanTimer);
+        setTestScrollLoadGuard(false);
+        const style = document.getElementById(STYLE_ID);
+        if (style) style.remove();
+        document.querySelectorAll(`.${MATCHED_CLASS}`).forEach(node => {
+          node.classList.remove(MATCHED_CLASS);
+        });
         if (panel && panel.parentNode) panel.remove();
       },
       reactivate() {
         if (!document.body.contains(panel)) {
           document.body.appendChild(panel);
         }
+        stopTestPageAutoIfRunning();
         scanAndFilter();
         input.focus({ preventScroll: true });
       }
@@ -538,13 +588,13 @@
 
   async function run() {
     if (!isSupportedPage()) {
-      showToast('Open a Facebook /photos_albums page first.', true);
+      showToast('No supported album list found on this page.', { level: 'error' });
       return;
     }
 
     const prefs = await getPrefs();
     if (!prefs.enabled) {
-      showToast('Album Filter is disabled in Options.', true);
+      showToast('Album Filter is disabled in Options.', { level: 'error' });
       return;
     }
 
@@ -552,7 +602,7 @@
     if (existingApp) {
       if (existingApp.__version === APP_VERSION && typeof existingApp.reactivate === 'function') {
         existingApp.reactivate();
-        showToast('Album Filter ready.');
+        showToast('Album Filter ready.', { level: 'info' });
         return;
       }
       if (typeof existingApp.destroy === 'function') {
@@ -566,8 +616,18 @@
     }
 
     window.__albumFilterApp = createApp(prefs);
-    showToast('Album Filter injected.');
+    showToast('Album Filter injected.', { level: 'success' });
   }
+
+  chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    if (!message || message.action !== 'showToast') return;
+    showToast(message.text || '', {
+      level: message.level || 'info',
+      duration: typeof message.duration === 'number' ? message.duration : 1800
+    });
+    sendResponse({ ok: true });
+    return true;
+  });
 
   run();
 })();

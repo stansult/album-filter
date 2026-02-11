@@ -73,7 +73,53 @@ chrome.action.onClicked.addListener(tab => {
     results => {
       if (chrome.runtime.lastError) return;
       const state = results?.[0]?.result?.toggled;
-      if (state !== 'open') return;
+      if (state !== 'open') {
+        if (state === 'closed') {
+          chrome.tabs.sendMessage(tabId, {
+            action: 'showToast',
+            text: 'Album Filter closed.',
+            level: 'expired',
+            duration: 1600
+          }, () => {
+            if (!chrome.runtime.lastError) return;
+            chrome.scripting.executeScript({
+              target: { tabId },
+              func: () => {
+                const existing = document.getElementById('album-filter-toast');
+                if (existing) existing.remove();
+                const toast = document.createElement('div');
+                toast.id = 'album-filter-toast';
+                toast.textContent = 'Album Filter closed.';
+                Object.assign(toast.style, {
+                  position: 'fixed',
+                  top: '14px',
+                  right: '14px',
+                  zIndex: '999999',
+                  padding: '8px 12px',
+                  borderRadius: '4px',
+                  fontFamily: 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif',
+                  fontSize: '13px',
+                  lineHeight: '1.3',
+                  color: '#fff',
+                  background: 'rgba(60, 60, 60, 0.75)',
+                  boxShadow: '0 2px 10px rgba(0,0,0,0.25)',
+                  opacity: '0',
+                  transition: 'opacity 0.2s ease'
+                });
+                document.body.appendChild(toast);
+                requestAnimationFrame(() => {
+                  toast.style.opacity = '1';
+                });
+                setTimeout(() => {
+                  toast.style.opacity = '0';
+                  setTimeout(() => toast.remove(), 200);
+                }, 1600);
+              }
+            });
+          });
+        }
+        return;
+      }
 
       chrome.scripting.executeScript(
         {
