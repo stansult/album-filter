@@ -7,6 +7,7 @@
   const PANEL_ID = 'album-filter-panel';
   const STYLE_ID = 'album-filter-style';
   const MATCHED_CLASS = 'album-filter-card-hidden';
+  const NON_ALBUM_HIDDEN_CLASS = 'album-filter-non-album-hidden';
   const SUPPORTED_PATH = /\/photos_albums(?:[/?#]|$)/i;
   const APP_VERSION = '1.1.0';
   const TOAST_INFO_BG = 'rgba(20, 40, 70, 0.75)';
@@ -180,6 +181,19 @@
       .${MATCHED_CLASS} {
         display: none !important;
       }
+      .${NON_ALBUM_HIDDEN_CLASS} {
+        display: none !important;
+      }
+      [data-af-layout-root][data-af-compact="true"] {
+        display: grid !important;
+        grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)) !important;
+        gap: 0 !important;
+        align-items: start !important;
+      }
+      [data-af-layout-root][data-af-compact="true"] > * {
+        min-width: 0 !important;
+        width: auto !important;
+      }
     `;
     document.documentElement.appendChild(style);
   }
@@ -263,7 +277,7 @@
   }
 
   function findCardContainer(anchor) {
-    const byWidth = anchor.closest('div[style*="min-width: 168px"]');
+    const byWidth = anchor.closest('div[style*="min-width: 168px"], div[style*="min-width:168px"]');
     if (byWidth) return byWidth;
 
     let current = anchor;
@@ -289,7 +303,8 @@
       stagnantCycles: 0,
       lastScanCount: 0,
       observer: null,
-      rescanTimer: null
+      rescanTimer: null,
+      layoutRoot: null
     };
 
     ensureStyles();
@@ -350,6 +365,67 @@
       status.classList.toggle('warn', !!warn);
     }
 
+    function clearCompactLayout() {
+      if (state.layoutRoot && state.layoutRoot.isConnected) {
+        state.layoutRoot.removeAttribute('data-af-layout-root');
+        state.layoutRoot.removeAttribute('data-af-compact');
+      }
+      document.querySelectorAll(`.${NON_ALBUM_HIDDEN_CLASS}`).forEach(node => {
+        node.classList.remove(NON_ALBUM_HIDDEN_CLASS);
+      });
+      state.layoutRoot = null;
+    }
+
+    function detectLayoutRoot() {
+      const counts = new Map();
+      state.albums.forEach(album => {
+        const parent = album.card?.parentElement;
+        if (!parent) return;
+        counts.set(parent, (counts.get(parent) || 0) + 1);
+      });
+      let bestNode = null;
+      let bestCount = 0;
+      counts.forEach((count, node) => {
+        if (count > bestCount) {
+          bestCount = count;
+          bestNode = node;
+        }
+      });
+      if (!bestNode || bestCount < 3) return null;
+      return bestNode;
+    }
+
+    function applyCompactLayout(enabled) {
+      if (isTestPlaygroundPage()) {
+        clearCompactLayout();
+        return;
+      }
+
+      if (!enabled) {
+        clearCompactLayout();
+        return;
+      }
+
+      const root = detectLayoutRoot();
+      if (!root) {
+        clearCompactLayout();
+        return;
+      }
+
+      if (state.layoutRoot && state.layoutRoot !== root) {
+        clearCompactLayout();
+      }
+      state.layoutRoot = root;
+      root.setAttribute('data-af-layout-root', 'true');
+      root.setAttribute('data-af-compact', 'true');
+
+      Array.from(root.children).forEach(child => {
+        const hasAlbum = !!child.querySelector('a[href*="/media/set/?set"]');
+        const isCreate = !!child.querySelector('a[href*="/media/set/create/"]');
+        child.classList.toggle(NON_ALBUM_HIDDEN_CLASS, !hasAlbum && !isCreate);
+      });
+    }
+
     function setTestScrollLoadGuard(enabled) {
       if (!isTestPlaygroundPage()) return;
       const sentinel = document.getElementById('scroll-sentinel');
@@ -408,6 +484,7 @@
 
       setStatus(`Albums loaded: ${state.albums.length} • Showing: ${shown}`);
       setTestScrollLoadGuard(!!q && !state.autoScanActive);
+      applyCompactLayout(!!q);
     }
 
     function scanAndFilter() {
@@ -493,6 +570,7 @@
       stopAutoScan();
       if (state.observer) state.observer.disconnect();
       if (state.rescanTimer) clearTimeout(state.rescanTimer);
+      clearCompactLayout();
       setTestScrollLoadGuard(false);
       const style = document.getElementById(STYLE_ID);
       if (style) style.remove();
@@ -567,6 +645,7 @@
         stopAutoScan();
         if (state.observer) state.observer.disconnect();
         if (state.rescanTimer) clearTimeout(state.rescanTimer);
+        clearCompactLayout();
         setTestScrollLoadGuard(false);
         const style = document.getElementById(STYLE_ID);
         if (style) style.remove();
