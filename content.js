@@ -1,6 +1,7 @@
 (() => {
   const PANEL_ID = 'album-filter-panel';
   const STYLE_ID = 'album-filter-style';
+  const NOTICE_ID = 'album-filter-inline-notice';
   const MATCHED_CLASS = 'album-filter-card-hidden';
   const MATCH_CLASS = 'album-filter-card-match';
   const NON_ALBUM_HIDDEN_CLASS = 'album-filter-non-album-hidden';
@@ -195,10 +196,6 @@
       html[data-af-query-active="true"] .${MATCH_CLASS} {
         opacity: 1 !important;
       }
-      html[data-af-query-active="true"] div[style*="min-width:168px"]:has(a[href*="/media/set/?set"]),
-      html[data-af-query-active="true"] div[style*="min-width: 168px"]:has(a[href*="/media/set/?set"]) {
-        opacity: 0.2 !important;
-      }
       [data-af-layout-root][data-af-compact="true"] {
         display: grid !important;
         grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)) !important;
@@ -208,6 +205,16 @@
       [data-af-layout-root][data-af-compact="true"] > * {
         min-width: 0 !important;
         width: auto !important;
+      }
+      #${NOTICE_ID} {
+        margin: 8px 0 10px;
+        padding: 8px 10px;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        background: #f8fafc;
+        color: #334155;
+        font-size: 12px;
+        line-height: 1.35;
       }
     `;
     document.documentElement.appendChild(style);
@@ -314,6 +321,7 @@
       autoScanActive: false,
       autoScanTimer: null,
       testPageAutoButton: null,
+      autoScanPinnedTop: null,
       stagnantCycles: 0,
       lastScanCount: 0,
       observer: null,
@@ -379,12 +387,57 @@
       status.classList.toggle('warn', !!warn);
     }
 
+    function removeInlineNotice() {
+      const existing = document.getElementById(NOTICE_ID);
+      if (existing) existing.remove();
+    }
+
+    function findNoticeAnchor() {
+      const tablists = Array.from(document.querySelectorAll('[role="tablist"]'));
+      const albumsTabs = tablists.find(node => /albums/i.test(node.textContent || ''));
+      if (albumsTabs) return albumsTabs;
+      if (state.layoutRoot && state.layoutRoot.parentElement) return state.layoutRoot.parentElement;
+      return state.layoutRoot;
+    }
+
+    function upsertInlineNotice(hasQuery, shown, loaded) {
+      if (!hasQuery) {
+        removeInlineNotice();
+        return;
+      }
+
+      const hidden = Math.max(0, loaded - shown);
+      const text = state.autoScanActive
+        ? (hidden > 0 ? 'Album Filter: active. Some albums are hidden.' : 'Album Filter: active.')
+        : (hidden > 0
+          ? `Album Filter: active. Some albums are hidden (showing ${shown} of ${loaded} loaded).`
+          : 'Album Filter: active.');
+
+      let notice = document.getElementById(NOTICE_ID);
+      if (!notice) {
+        notice = document.createElement('div');
+        notice.id = NOTICE_ID;
+      }
+      if (notice.textContent !== text) {
+        notice.textContent = text;
+      }
+
+      const anchor = findNoticeAnchor();
+      if (anchor && anchor.parentElement) {
+        if (notice.parentElement !== anchor.parentElement || notice.previousElementSibling !== anchor) {
+          anchor.insertAdjacentElement('afterend', notice);
+        }
+      } else if (!notice.parentElement) {
+        document.body.appendChild(notice);
+      }
+    }
+
     function setQueryActiveMode(enabled) {
       document.documentElement.setAttribute('data-af-query-active', enabled ? 'true' : 'false');
-      document.querySelectorAll(`.${MATCH_CLASS}`).forEach(node => {
-        node.classList.remove(MATCH_CLASS);
-      });
       if (!enabled) {
+        document.querySelectorAll(`.${MATCH_CLASS}`).forEach(node => {
+          node.classList.remove(MATCH_CLASS);
+        });
         state.albums.forEach(album => {
           album.card.style.removeProperty('opacity');
         });
@@ -403,6 +456,7 @@
         state.layoutRoot.removeAttribute('data-af-layout-root');
         state.layoutRoot.removeAttribute('data-af-compact');
       }
+      removeInlineNotice();
       document.querySelectorAll(`.${NON_ALBUM_HIDDEN_CLASS}`).forEach(node => {
         node.classList.remove(NON_ALBUM_HIDDEN_CLASS);
       });
@@ -507,11 +561,6 @@
 
       state.albums.forEach(album => {
         let matches = true;
-        if (hasQuery) {
-          album.card.style.setProperty('opacity', '0.2', 'important');
-        } else {
-          album.card.style.removeProperty('opacity');
-        }
         if (parsedQuery.mode === 'phrase') {
           matches = !!parsedQuery.phrase && album.titleNorm.includes(parsedQuery.phrase);
         } else if (parsedQuery.tokens.length) {
@@ -519,14 +568,20 @@
         }
 
         album.card.classList.toggle(MATCHED_CLASS, !matches);
-        if (hasQuery && matches) {
+        if (!hasQuery) {
+          album.card.style.removeProperty('opacity');
+          album.card.classList.remove(MATCH_CLASS);
+        } else if (matches) {
           album.card.classList.add(MATCH_CLASS);
           album.card.style.setProperty('opacity', '1', 'important');
         } else {
           album.card.classList.remove(MATCH_CLASS);
+          album.card.style.setProperty('opacity', '0.2', 'important');
         }
         if (matches) shown += 1;
       });
+
+      upsertInlineNotice(hasQuery, shown, state.albums.length);
 
       setStatus(`Albums loaded: ${state.albums.length} • Showing: ${shown}`);
       setTestScrollLoadGuard(hasQuery && !state.autoScanActive);
@@ -539,6 +594,7 @@
     }
 
     function stopAutoScan(reason) {
+      const restoreTop = state.autoScanPinnedTop;
       state.autoScanActive = false;
       state.stagnantCycles = 0;
       state.lastScanCount = state.albums.length;
@@ -546,11 +602,27 @@
         clearInterval(state.autoScanTimer);
         state.autoScanTimer = null;
       }
+      state.autoScanPinnedTop = null;
       if (state.testPageAutoButton && state.testPageAutoButton.getAttribute('aria-pressed') === 'true') {
         state.testPageAutoButton.click();
       }
+      if (!isTestPlaygroundPage() && typeof restoreTop === 'number') {
+        window.scrollTo({ top: restoreTop, left: 0, behavior: 'auto' });
+      }
       if (reason) setStatus(reason);
       syncButtonState();
+    }
+
+    function triggerLoadFromTopPinnedView() {
+      if (isTestPlaygroundPage()) return;
+      const pinnedTop = typeof state.autoScanPinnedTop === 'number' ? state.autoScanPinnedTop : window.scrollY;
+      const maxTop = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+      if (maxTop <= pinnedTop + 4) return;
+      window.scrollTo({ top: maxTop, left: 0, behavior: 'auto' });
+      requestAnimationFrame(() => {
+        if (!state.autoScanActive) return;
+        window.scrollTo({ top: pinnedTop, left: 0, behavior: 'auto' });
+      });
     }
 
     function startAutoScan() {
@@ -558,6 +630,7 @@
       state.autoScanActive = true;
       state.stagnantCycles = 0;
       state.lastScanCount = state.albums.length;
+      state.autoScanPinnedTop = isTestPlaygroundPage() ? null : window.scrollY;
       setStatus('Auto-loading albums...');
 
       if (isTestPlaygroundPage()) {
@@ -572,13 +645,7 @@
       state.autoScanTimer = setInterval(() => {
         if (!state.autoScanActive) return;
 
-        if (!isTestPlaygroundPage()) {
-          const pinnedTop = window.scrollY;
-          window.scrollTo({ top: document.documentElement.scrollHeight, left: 0, behavior: 'auto' });
-          setTimeout(() => {
-            window.scrollTo({ top: pinnedTop, left: 0, behavior: 'auto' });
-          }, 40);
-        }
+        triggerLoadFromTopPinnedView();
 
         scanAndFilter();
 
@@ -628,6 +695,7 @@
       });
       panel.remove();
       delete window.__albumFilterApp;
+      removeInlineNotice();
       showToast('Album Filter closed.', { level: 'expired', duration: 1600 });
     }
 
@@ -719,6 +787,7 @@
         state.albums.forEach(album => {
           album.card.style.removeProperty('opacity');
         });
+        removeInlineNotice();
         if (panel && panel.parentNode) panel.remove();
       },
       reactivate() {
