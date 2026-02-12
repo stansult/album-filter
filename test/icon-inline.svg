@@ -1,10 +1,38 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" role="img" aria-label="Album Filter icon">
-  <rect width="16" height="16" rx="3" fill="#F3F4F6"/>
-  <g transform="translate(-0.4,-0.4)">
-    <rect x="2.1" y="2.8" width="11.3" height="9.4" rx="1.4" fill="#FFFFFF" stroke="#6B7280" stroke-width="0.9"/>
-    <rect x="2.6" y="3.3" width="10.3" height="8.4" rx="1" fill="#E6F0FA"/>
-    <path d="M3 11.2L6.2 7.9L8.6 9.8L10.4 7.6L13 11.2Z" fill="#8FA3BF"/>
-    <circle cx="5.5" cy="6.1" r="0.7" fill="#F2C98A"/>
-    <path d="M7 6.7H14.9L12.9 9.3V12.3L11.3 13.1V9.3Z" fill="#22C55E" fill-opacity="0.35" stroke="#000000" stroke-width="0.5" stroke-linejoin="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!-- Background -->
+  <rect width="512" height="512" rx="96" fill="#F3F4F6"/>
+
+  <!-- Shifted content -->
+  <g transform="translate(-12,-12)">
+
+    <!-- Clip area -->
+    <defs>
+      <clipPath id="photoClip">
+        <rect x="77" y="113" width="334" height="274" rx="32"/>
+      </clipPath>
+    </defs>
+
+    <!-- Frame -->
+    <rect x="64" y="100" width="360" height="300" rx="40"
+          fill="#FFFFFF"
+          stroke="#6B7280"
+          stroke-width="26"/>
+
+    <!-- Photo content -->
+    <g clip-path="url(#photoClip)">
+      <rect x="77" y="113" width="334" height="274" rx="32" fill="#E6F0FA"/>
+      <path d="M100 382 L216 258 L300 330 L364 246 L460 382 Z"
+            fill="#8FA3BF"/>
+      <circle cx="190" cy="206" r="22" fill="#F2C98A"/>
+    </g>
+
+    <!-- Enlarged semi-transparent filter -->
+    <path d="M200 220 H480 L380 350 V470 L300 510 V350 Z"
+          fill="#22C55E"
+          fill-opacity="0.35"
+          stroke="#000000"
+          stroke-width="22"
+          stroke-linejoin="round"/>
+
   </g>
 </svg>
