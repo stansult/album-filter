@@ -235,7 +235,8 @@
         border-radius: 8px;
         background: #f8fafc;
         color: #334155;
-        font-size: 12px;
+        font-size: 14px;
+        font-weight: 500;
         line-height: 1.35;
       }
     `;
@@ -435,11 +436,13 @@
       }
 
       const hidden = Math.max(0, loaded - shown);
-      const text = state.autoScanActive
-        ? (hidden > 0 ? 'Album Filter: active. Some albums are hidden.' : 'Album Filter: active.')
-        : (hidden > 0
-          ? `Album Filter: active. Some albums are hidden (showing ${shown} of ${loaded} loaded).`
-          : 'Album Filter: active.');
+      const text = hidden === 0
+        ? 'Album Filter: active.'
+        : shown === 0
+          ? `Album Filter: active. No matching albums in loaded list (0 of ${loaded} loaded).`
+          : state.autoScanActive
+            ? 'Album Filter: active. Some albums are hidden.'
+            : `Album Filter: active. Some albums are hidden (showing ${shown} of ${loaded} loaded).`;
 
       let notice = document.getElementById(NOTICE_ID);
       if (!notice) {
