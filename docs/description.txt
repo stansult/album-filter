@@ -10,10 +10,16 @@ How it works:
 - Type a query to filter loaded albums by title
 - Click Auto-load to keep loading additional album batches, then Stop to stop
 - Click Rescan loaded to re-read albums already present in the page DOM
+- Press Esc in the filter input to close the panel
 
 Query behavior:
 - Unquoted query: split into words, all words must appear in title (order-independent)
 - Quoted query ("..." or '...'): exact phrase match in title
+
+While filtering is active:
+- An inline notice appears near the Albums area ("Album Filter: active...")
+- Newly loaded non-matching cards may briefly appear dim before being hidden
+- While Auto-load is active, the panel warns that page scroll/jumps may occur
 
 Product direction:
 - Current support: Facebook album pages (first proof of concept target)
