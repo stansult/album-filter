@@ -40,3 +40,4 @@ Example:
 - Album Filter is not affiliated with or endorsed by Meta/Facebook.
 - This project focuses on user-triggered, in-browser filtering workflows.
 - There is currently no options page; behavior is controlled from the in-page panel.
+- Privacy policy: [`PRIVACY.md`](PRIVACY.md)

@@ -5,8 +5,7 @@
   "description": "Add in-page text filtering and auto-loading controls to long album pages.",
   "permissions": [
     "activeTab",
-    "scripting",
-    "storage"
+    "scripting"
   ],
   "action": {
     "default_title": "Album Filter"
