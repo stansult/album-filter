@@ -4,10 +4,13 @@
   const NOTICE_ID = 'album-filter-inline-notice';
   const MATCHED_CLASS = 'album-filter-card-hidden';
   const MATCH_CLASS = 'album-filter-card-match';
+  const SLOT_MATCH_CLASS = 'album-filter-slot-match';
+  const PENDING_CLASS = 'album-filter-card-pending';
   const NON_ALBUM_HIDDEN_CLASS = 'album-filter-non-album-hidden';
   const SUPPORTED_PATH = /\/photos_albums(?:[/?#]|$)/i;
   const APP_VERSION = '1.1.0';
   const MAX_STAGNANT_CYCLES = 3;
+  const PENDING_HIDE_DELAY_MS = 160;
   const TOAST_INFO_BG = 'rgba(20, 40, 70, 0.75)';
   const TOAST_SUCCESS_BG = 'rgba(20, 70, 40, 0.75)';
   const TOAST_EXPIRED_BG = 'rgba(60, 60, 60, 0.75)';
@@ -206,14 +209,20 @@
       .${NON_ALBUM_HIDDEN_CLASS} {
         display: none !important;
       }
-      html[data-af-query-active="true"] .${MATCH_CLASS} {
-        opacity: 1 !important;
+      .${PENDING_CLASS} {
+        opacity: 0.2 !important;
       }
       [data-af-layout-root][data-af-compact="true"] {
         display: grid !important;
         grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)) !important;
         gap: 0 !important;
         align-items: start !important;
+      }
+      [data-af-layout-root][data-af-compact="true"][data-af-query-active="true"] > * {
+        opacity: 0.2 !important;
+      }
+      [data-af-layout-root][data-af-compact="true"][data-af-query-active="true"] > .${SLOT_MATCH_CLASS} {
+        opacity: 1 !important;
       }
       [data-af-layout-root][data-af-compact="true"] > * {
         min-width: 0 !important;
@@ -338,7 +347,11 @@
       lastScanCount: 0,
       observer: null,
       rescanTimer: null,
-      layoutRoot: null
+      layoutRoot: null,
+      knownAlbumKeys: new Set(),
+      stickyMatchedKeys: new Set(),
+      lastQuerySignature: '',
+      pendingHideTimers: new Map()
     };
 
     ensureStyles();
@@ -450,13 +463,35 @@
     function setQueryActiveMode(enabled) {
       document.documentElement.setAttribute('data-af-query-active', enabled ? 'true' : 'false');
       if (!enabled) {
-        document.querySelectorAll(`.${MATCH_CLASS}`).forEach(node => {
-          node.classList.remove(MATCH_CLASS);
-        });
-        state.albums.forEach(album => {
-          album.card.style.removeProperty('opacity');
+        document.querySelectorAll(`.${PENDING_CLASS}`).forEach(node => {
+          node.classList.remove(PENDING_CLASS);
         });
       }
+    }
+
+    function clearPendingHideTimers() {
+      state.pendingHideTimers.forEach(timerId => {
+        clearTimeout(timerId);
+      });
+      state.pendingHideTimers.clear();
+    }
+
+    function cancelPendingHide(card) {
+      const timerId = state.pendingHideTimers.get(card);
+      if (timerId) {
+        clearTimeout(timerId);
+        state.pendingHideTimers.delete(card);
+      }
+    }
+
+    function schedulePendingHide(card) {
+      if (state.pendingHideTimers.has(card)) return;
+      const timerId = setTimeout(() => {
+        state.pendingHideTimers.delete(card);
+        card.classList.add(MATCHED_CLASS);
+        card.classList.remove(PENDING_CLASS);
+      }, PENDING_HIDE_DELAY_MS);
+      state.pendingHideTimers.set(card, timerId);
     }
 
     function hasActiveQuery() {
@@ -470,12 +505,39 @@
       if (state.layoutRoot && state.layoutRoot.isConnected) {
         state.layoutRoot.removeAttribute('data-af-layout-root');
         state.layoutRoot.removeAttribute('data-af-compact');
+        state.layoutRoot.removeAttribute('data-af-query-active');
       }
       removeInlineNotice();
       document.querySelectorAll(`.${NON_ALBUM_HIDDEN_CLASS}`).forEach(node => {
         node.classList.remove(NON_ALBUM_HIDDEN_CLASS);
       });
+      document.querySelectorAll(`.${SLOT_MATCH_CLASS}`).forEach(node => {
+        node.classList.remove(SLOT_MATCH_CLASS);
+      });
       state.layoutRoot = null;
+    }
+
+    function applySlotHighlighting(hasQuery) {
+      if (!state.layoutRoot || !state.layoutRoot.isConnected) return;
+      state.layoutRoot.setAttribute('data-af-query-active', hasQuery ? 'true' : 'false');
+
+      Array.from(state.layoutRoot.children).forEach(child => {
+        child.classList.remove(SLOT_MATCH_CLASS);
+        if (!hasQuery) return;
+        if (child.classList.contains(NON_ALBUM_HIDDEN_CLASS)) return;
+
+        const hasAlbum = !!child.querySelector('a[href*="/media/set/?set"]');
+        if (!hasAlbum) {
+          child.classList.add(SLOT_MATCH_CLASS);
+          return;
+        }
+
+        const hasMatched = child.classList.contains(MATCH_CLASS)
+          || !!child.querySelector(`.${MATCH_CLASS}`);
+        if (hasMatched) {
+          child.classList.add(SLOT_MATCH_CLASS);
+        }
+      });
     }
 
     function detectLayoutRoot() {
@@ -526,6 +588,7 @@
         const isCreate = !!child.querySelector('a[href*="/media/set/create/"]');
         child.classList.toggle(NON_ALBUM_HIDDEN_CLASS, !hasAlbum && !isCreate);
       });
+      applySlotHighlighting(enabled);
     }
 
     function setTestScrollLoadGuard(enabled) {
@@ -562,6 +625,16 @@
         });
       });
 
+      const queryActive = hasActiveQuery();
+      if (queryActive) {
+        entries.forEach(entry => {
+          if (!state.knownAlbumKeys.has(entry.key) && !state.stickyMatchedKeys.has(entry.key)) {
+            entry.card.classList.add(PENDING_CLASS);
+          }
+        });
+      }
+      state.knownAlbumKeys = new Set(entries.map(entry => entry.key));
+
       state.albums = entries;
       return entries;
     }
@@ -571,8 +644,16 @@
       const hasQuery = parsedQuery.mode === 'phrase'
         ? !!parsedQuery.phrase
         : parsedQuery.tokens.length > 0;
+      const querySignature = JSON.stringify(parsedQuery);
+      if (querySignature !== state.lastQuerySignature) {
+        state.stickyMatchedKeys.clear();
+        state.lastQuerySignature = querySignature;
+      }
       let shown = 0;
       setQueryActiveMode(hasQuery);
+      if (!hasQuery) {
+        clearPendingHideTimers();
+      }
 
       state.albums.forEach(album => {
         let matches = true;
@@ -582,16 +663,22 @@
           matches = parsedQuery.tokens.every(token => album.titleNorm.includes(token));
         }
 
-        album.card.classList.toggle(MATCHED_CLASS, !matches);
-        if (!hasQuery) {
-          album.card.style.removeProperty('opacity');
-          album.card.classList.remove(MATCH_CLASS);
-        } else if (matches) {
-          album.card.classList.add(MATCH_CLASS);
-          album.card.style.setProperty('opacity', '1', 'important');
+        album.card.classList.toggle(MATCH_CLASS, matches);
+        if (matches || !hasQuery) {
+          cancelPendingHide(album.card);
+          album.card.classList.remove(MATCHED_CLASS);
+          album.card.classList.remove(PENDING_CLASS);
+        } else if (album.card.classList.contains(PENDING_CLASS)) {
+          album.card.classList.remove(MATCHED_CLASS);
+          schedulePendingHide(album.card);
         } else {
-          album.card.classList.remove(MATCH_CLASS);
-          album.card.style.setProperty('opacity', '0.2', 'important');
+          cancelPendingHide(album.card);
+          album.card.classList.add(MATCHED_CLASS);
+          album.card.classList.remove(PENDING_CLASS);
+        }
+
+        if (matches && hasQuery) {
+          state.stickyMatchedKeys.add(album.key);
         }
         if (matches) shown += 1;
       });
@@ -601,6 +688,7 @@
       setStatus(`Albums loaded: ${state.albums.length} • Showing: ${shown}`);
       setTestScrollLoadGuard(hasQuery && !state.autoScanActive);
       applyCompactLayout(hasQuery);
+      applySlotHighlighting(hasQuery);
     }
 
     function scanAndFilter() {
@@ -687,6 +775,7 @@
       stopAutoScan();
       if (state.observer) state.observer.disconnect();
       if (state.rescanTimer) clearTimeout(state.rescanTimer);
+      clearPendingHideTimers();
       clearCompactLayout();
       setTestScrollLoadGuard(false);
       setQueryActiveMode(false);
@@ -695,8 +784,8 @@
       document.querySelectorAll(`.${MATCHED_CLASS}`).forEach(node => {
         node.classList.remove(MATCHED_CLASS);
       });
-      state.albums.forEach(album => {
-        album.card.style.removeProperty('opacity');
+      document.querySelectorAll(`.${PENDING_CLASS}`).forEach(node => {
+        node.classList.remove(PENDING_CLASS);
       });
       panel.remove();
       delete window.__albumFilterApp;
@@ -781,6 +870,7 @@
         stopAutoScan();
         if (state.observer) state.observer.disconnect();
         if (state.rescanTimer) clearTimeout(state.rescanTimer);
+        clearPendingHideTimers();
         clearCompactLayout();
         setTestScrollLoadGuard(false);
         setQueryActiveMode(false);
@@ -789,8 +879,8 @@
         document.querySelectorAll(`.${MATCHED_CLASS}`).forEach(node => {
           node.classList.remove(MATCHED_CLASS);
         });
-        state.albums.forEach(album => {
-          album.card.style.removeProperty('opacity');
+        document.querySelectorAll(`.${PENDING_CLASS}`).forEach(node => {
+          node.classList.remove(PENDING_CLASS);
         });
         removeInlineNotice();
         if (panel && panel.parentNode) panel.remove();
