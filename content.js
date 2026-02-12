@@ -187,6 +187,19 @@
         font-size: 11px;
         white-space: pre-line;
       }
+      #${PANEL_ID} .af-auto-warn {
+        display: none;
+        padding: 7px 9px;
+        border: 1px solid #fecaca;
+        border-radius: 8px;
+        background: #fef2f2;
+        color: #991b1b;
+        font-size: 12px;
+        line-height: 1.3;
+      }
+      #${PANEL_ID} .af-auto-warn.show {
+        display: block;
+      }
       .${MATCHED_CLASS} {
         display: none !important;
       }
@@ -321,7 +334,6 @@
       autoScanActive: false,
       autoScanTimer: null,
       testPageAutoButton: null,
-      autoScanPinnedTop: null,
       stagnantCycles: 0,
       lastScanCount: 0,
       observer: null,
@@ -351,6 +363,7 @@
           <button type="button" class="af-btn" data-action="auto">Auto-load</button>
           <button type="button" class="af-btn secondary" data-action="stop">Stop</button>
         </div>
+        <div class="af-auto-warn" aria-live="polite">Warning: Auto-load may scroll/jump the page to trigger more loading.</div>
         <div class="af-help">- Rescan loaded updates the list from albums already in the page DOM.
 - Auto-load fetches more pages.</div>
         <div class="af-status" aria-live="polite">Ready</div>
@@ -365,6 +378,7 @@
     const autoBtn = panel.querySelector('button[data-action="auto"]');
     const stopBtn = panel.querySelector('button[data-action="stop"]');
     const clearBtn = panel.querySelector('.af-input-clear');
+    const autoWarn = panel.querySelector('.af-auto-warn');
 
     function syncButtonState() {
       autoBtn.setAttribute('aria-pressed', state.autoScanActive ? 'true' : 'false');
@@ -372,6 +386,7 @@
       stopBtn.disabled = !state.autoScanActive;
       clearBtn.disabled = !state.query;
       scanBtn.disabled = false;
+      autoWarn.classList.toggle('show', state.autoScanActive);
     }
 
     function stopTestPageAutoIfRunning() {
@@ -594,7 +609,6 @@
     }
 
     function stopAutoScan(reason) {
-      const restoreTop = state.autoScanPinnedTop;
       state.autoScanActive = false;
       state.stagnantCycles = 0;
       state.lastScanCount = state.albums.length;
@@ -602,27 +616,18 @@
         clearInterval(state.autoScanTimer);
         state.autoScanTimer = null;
       }
-      state.autoScanPinnedTop = null;
       if (state.testPageAutoButton && state.testPageAutoButton.getAttribute('aria-pressed') === 'true') {
         state.testPageAutoButton.click();
-      }
-      if (!isTestPlaygroundPage() && typeof restoreTop === 'number') {
-        window.scrollTo({ top: restoreTop, left: 0, behavior: 'auto' });
       }
       if (reason) setStatus(reason);
       syncButtonState();
     }
 
-    function triggerLoadFromTopPinnedView() {
+    function triggerLoadFallback() {
       if (isTestPlaygroundPage()) return;
-      const pinnedTop = typeof state.autoScanPinnedTop === 'number' ? state.autoScanPinnedTop : window.scrollY;
       const maxTop = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-      if (maxTop <= pinnedTop + 4) return;
+      if (maxTop <= 0) return;
       window.scrollTo({ top: maxTop, left: 0, behavior: 'auto' });
-      requestAnimationFrame(() => {
-        if (!state.autoScanActive) return;
-        window.scrollTo({ top: pinnedTop, left: 0, behavior: 'auto' });
-      });
     }
 
     function startAutoScan() {
@@ -630,7 +635,6 @@
       state.autoScanActive = true;
       state.stagnantCycles = 0;
       state.lastScanCount = state.albums.length;
-      state.autoScanPinnedTop = isTestPlaygroundPage() ? null : window.scrollY;
       setStatus('Auto-loading albums...');
 
       if (isTestPlaygroundPage()) {
@@ -644,8 +648,6 @@
 
       state.autoScanTimer = setInterval(() => {
         if (!state.autoScanActive) return;
-
-        triggerLoadFromTopPinnedView();
 
         scanAndFilter();
 
@@ -665,6 +667,9 @@
         }
 
         state.stagnantCycles += 1;
+        if (state.stagnantCycles === 1) {
+          triggerLoadFallback();
+        }
         if (state.stagnantCycles >= MAX_STAGNANT_CYCLES) {
           stopAutoScan(`Auto-scan stopped. No new albums after ${state.stagnantCycles} checks.`);
         }
