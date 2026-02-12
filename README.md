@@ -1,6 +1,8 @@
-# Album Filter
+# Album Filter (Chrome Extension)
 
 Album Filter adds in-page text filtering for long, paginated album lists.
+
+You can try it on the test page: [Album Filter Playground](https://album-filter.stansult.com).
 
 ## Why
 
@@ -41,6 +43,32 @@ Example:
 - Generic architecture for site-specific adapters
 - Facebook support first
 - Additional sites can be added over time when they need the same capability
+
+## How to Install
+
+### Public version
+
+Install public version from Chrome Web Store:
+<a href="https://chromewebstore.google.com/detail/hflbafejehpoclienjonceojnnlckahm"><img src="icon16.png" width="15" hspace="6" alt="Album Filter extension in Chrome Web Store">Album Filter</a>.
+
+The Web Store listing may lag behind the latest code due to review time.
+
+### Development mode
+
+1. Clone or download this repository.
+2. Open Chrome and go to `chrome://extensions`.
+3. Enable **Developer mode**.
+4. Click **Load unpacked**.
+5. Select the project folder.
+
+#### Packaging for Chrome Web Store
+
+- Create upload zip: `npm run package`
+- Bump patch + package: `npm run package:patch`
+
+#### Album Filter Playground
+
+Use [Album Filter Playground](https://album-filter.stansult.com) to test long-list and auto-load behavior locally.
 
 ## Notes
 

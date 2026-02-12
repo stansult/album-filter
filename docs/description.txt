@@ -1,5 +1,7 @@
 Album Filter adds in-page text filtering for long, paginated album lists.
 
+Chrome Web Store: https://chromewebstore.google.com/detail/hflbafejehpoclienjonceojnnlckahm
+
 Why it helps:
 - Large album lists are hard to navigate
 - Browser Find (Cmd/Ctrl + F) only works for content currently loaded
