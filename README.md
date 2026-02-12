@@ -1,8 +1,8 @@
 # Album Filter (Chrome Extension)
 
-Album Filter adds in-page text filtering for long, paginated album lists.
+**Album Filter** is a Chrome extension that adds in-page text filtering for long, paginated album lists.
 
-You can try it on the test page: [Album Filter Playground](https://album-filter.stansult.com).
+It currently supports Facebook photo albums, where you can try it right now. You can also try it on our test page: [Album Filter Playground](https://album-filter.stansult.com).
 
 ## Why
 
@@ -49,7 +49,7 @@ Example:
 ### Public version
 
 Install public version from Chrome Web Store:
-<a href="https://chromewebstore.google.com/detail/hflbafejehpoclienjonceojnnlckahm"><img src="icon16.png" width="15" hspace="6" alt="Album Filter extension in Chrome Web Store">Album Filter</a>.
+<a href="https://chromewebstore.google.com/detail/hflbafejehpoclienjonceojnnlckahm"><img src="icon.svg" width="15" hspace="6" alt="Album Filter extension in Chrome Web Store">Album Filter</a>.
 
 The Web Store listing may lag behind the latest code due to review time.
 
