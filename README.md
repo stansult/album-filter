@@ -14,7 +14,7 @@ Album Filter is designed to make finding albums faster by adding filtering contr
 - Click the extension icon to open/close the in-page Album Filter panel.
 - Type a query to filter loaded albums by title.
 - Click `Auto-load` to keep loading additional album batches, then `Stop` to stop.
-- Click `Rescan loaded` to re-read albums already present in the DOM.
+- Click `Rescan` to re-read albums already present in the DOM.
 - Press `Esc` while focused in the filter input to close the panel.
 
 ### Query Behavior

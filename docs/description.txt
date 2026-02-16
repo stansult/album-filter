@@ -11,7 +11,7 @@ How it works:
 - Click the extension icon to open/close the in-page Album Filter panel
 - Type a query to filter loaded albums by title
 - Click Auto-load to keep loading additional album batches, then Stop to stop
-- Click Rescan loaded to re-read albums already present in the page DOM
+- Click Rescan to re-read albums already present in the page DOM
 - Press Esc in the filter input to close the panel
 
 Query behavior:

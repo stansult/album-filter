@@ -373,12 +373,12 @@
           <button type="button" class="af-input-clear" aria-label="Clear filter">×</button>
         </div>
         <div class="af-row">
-          <button type="button" class="af-btn" data-action="scan">Rescan loaded</button>
+          <button type="button" class="af-btn" data-action="scan">Rescan</button>
           <button type="button" class="af-btn" data-action="auto">Auto-load</button>
           <button type="button" class="af-btn secondary" data-action="stop">Stop</button>
         </div>
         <div class="af-auto-warn" aria-live="polite">Warning: Auto-load may scroll/jump the page to trigger more loading.</div>
-        <div class="af-help">- Rescan loaded updates the list from albums already in the page DOM.
+        <div class="af-help">- Rescan refreshes albums already on the page.
 - Auto-load fetches more pages.</div>
         <div class="af-status" aria-live="polite">Ready</div>
       </div>
