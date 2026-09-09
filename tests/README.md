@@ -3,7 +3,7 @@
 Run the new regression tests and record traces, including successful tests:
 
 ```bash
-npx playwright test filtering.spec.ts loading.spec.ts dimming.spec.ts --project=chromium --trace on
+npx playwright test filtering.spec.ts loading.spec.ts loading-transitions.spec.ts dimming.spec.ts --project=chromium --trace on
 npx playwright show-report
 ```
 
@@ -19,6 +19,7 @@ CI runs this suite before eligible playground deployments. See [deployment setup
 - `playground.spec.ts`: playground availability.
 - `filtering.spec.ts`: complete visible/hidden sets, case/whitespace, all-word and quoted-phrase searches, changing/clearing queries, zero results, and close/reopen via button, Escape, and toolbar action.
 - `loading.spec.ts`: newly loaded matches/nonmatches, Rescan not starting auto-load, completion, Stop, and closing during an in-flight batch.
+- `loading-transitions.spec.ts`: changing a query during a load, clearing during pending hide, restarting Auto-load after Stop, and regenerating the list while filtering.
 - `dimming.spec.ts`: immediate pending-card dimming during real playground batch insertion with auto-load on/off, opaque confirmed matches, compact placement, and desktop/mobile layout restoration.
 
 ## Test boundaries
@@ -29,6 +30,8 @@ Each test receives a fresh temporary browser profile. The fixture honors headed/
 Search tests use 20 explicitly named albums. Loading tests use the playground's seeded generator and real batch-loading functions. The scroll sentinel is hidden in these controlled tests so browser height or filtering-induced layout changes cannot trigger additional natural loads. This does not test natural infinite scrolling.
 
 Stop tests pause/advance the playground clock to allow one already-started batch to finish and verify no later batch is scheduled. They do not assume Stop cancels work already in flight. The clock is not a substitute for testing Facebook's actual network loading or the extension's isolated-world timers.
+
+The pending-hide cancellation test observes the real pending CSS state and clicks Clear inside a browser-side MutationObserver to act within the 160 ms hide window. It then watches for cards becoming hidden for 500 ms, beyond that deadline. This timing-focused test uses the real button handler, but not a physical pointer click; ordinary Clear button interaction is covered separately.
 
 The playground in `test/` is the only Facebook substitute. Its cards use the structure recognized by the extension on Facebook, and the extension applies the same compact layout, immediate new-card dimming, and inline notices. There is no separate mock Facebook page or Facebook URL interception. No Facebook account, credentials, or personal snapshots are used.
 
