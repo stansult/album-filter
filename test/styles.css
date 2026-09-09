@@ -303,6 +303,18 @@ button.changed:focus-visible {
 .album-card,
 .create-card {
   position: relative;
+  /* Preserve the configurable unfiltered grid despite Facebook's inline width marker. */
+  min-width: 0 !important;
+}
+
+.album-grid[data-af-compact="true"] > .album-card,
+.album-grid[data-af-compact="true"] > .create-card {
+  padding: 4px;
+}
+
+.album-grid[data-af-compact="true"] .album-menu {
+  top: 12px;
+  right: 12px;
 }
 
 .album-link,

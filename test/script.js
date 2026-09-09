@@ -249,12 +249,13 @@ function generateAlbums(config) {
 }
 
 function renderCreateCard() {
-  const article = document.createElement('article');
+  const article = document.createElement('div');
   article.className = 'create-card';
+  article.style.minWidth = '168px';
   article.dataset.afSystemCard = 'create';
 
   const link = document.createElement('a');
-  link.href = '#';
+  link.href = 'https://www.facebook.com/media/set/create/';
   link.className = 'create-link';
   link.addEventListener('click', event => event.preventDefault());
 
@@ -264,6 +265,7 @@ function renderCreateCard() {
 
   const title = document.createElement('div');
   title.className = 'create-title';
+  title.dir = 'auto';
   title.textContent = 'Create album';
 
   link.appendChild(cover);
@@ -273,8 +275,10 @@ function renderCreateCard() {
 }
 
 function renderAlbumCard(album) {
-  const article = document.createElement('article');
+  // Match the card boundary and title/count markup recognized on Facebook.
+  const article = document.createElement('div');
   article.className = 'album-card';
+  article.style.minWidth = '168px';
   article.dataset.afAlbumCard = '1';
   article.dataset.afAlbumId = String(album.id);
 
@@ -294,11 +298,13 @@ function renderAlbumCard(album) {
 
   const title = document.createElement('div');
   title.className = 'album-title';
+  title.dir = 'auto';
   title.dataset.afAlbumTitle = '1';
   title.textContent = album.title;
 
   const count = document.createElement('div');
   count.className = 'album-count';
+  count.dir = 'auto';
   count.dataset.afAlbumCount = '1';
   count.textContent = album.countLabel;
 

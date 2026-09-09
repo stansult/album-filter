@@ -563,11 +563,6 @@
     }
 
     function applyCompactLayout(enabled) {
-      if (isTestPlaygroundPage()) {
-        clearCompactLayout();
-        return;
-      }
-
       if (!enabled) {
         clearCompactLayout();
         return;

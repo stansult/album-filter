@@ -30,6 +30,7 @@ Suggested next-thread priorities:
 4. Keep `docs/description.txt` concise and non-keyword-stuffed for CWS policy compliance.
 
 Workflow rules:
+- Use the playground in `test/` as the only Facebook substitute for manual and automated tests; do not create separate mock Facebook pages.
 - Don't start implementing / changing code unless you got request from me, or you suggested changes and I told you to start
 - Keep this handoff file updated whenever process changes so a fresh thread can resume without context loss.
 - Before committing, review the full diff and draft a commit message that covers all included changes.
