@@ -8,6 +8,7 @@ See `README.md` for functionality and usage, and `tests/README.md` for test cove
 - Treat questions as questions: answer the requested explanation without assuming criticism, disagreement, or a request to reverse a recommendation or implement changes.
 - Do not implement or change code unless the user requests it or approves a suggested change.
 - Distinguish verified facts from assumptions. Do not present guessed UI instructions as established facts.
+- Estimate work before starting. If a task may take five minutes or longer, explain the expected duration and wait for user approval before proceeding.
 
 ## Development and Testing
 
@@ -31,6 +32,7 @@ See `README.md` for functionality and usage, and `tests/README.md` for test cove
 - `docs/description.txt` is the source for the store listing description. Keep it concise and consistent with `README.md`.
 - Packaging compares the description with `dist/.description-last`. If changed, it writes `dist/description-to-upload.txt` and updates `dist/.description-last`.
 - `dist/description-to-upload.txt` persists for manual upload and may be deleted after uploading it to the store.
+- Run packaging checks with `node --test scripts/package-extension.test.cjs`; they operate only on temporary fixtures.
 
 ## Playground Deployment
 

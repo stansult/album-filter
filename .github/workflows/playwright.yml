@@ -22,6 +22,8 @@ jobs:
       run: npx playwright install --with-deps chromium
     - name: Test deployment decision logic
       run: node --test scripts/deployment-plan.test.cjs
+    - name: Test extension packaging
+      run: node --test scripts/package-extension.test.cjs
     - name: Run Playwright tests
       run: npx playwright test
     - uses: actions/upload-artifact@v7
