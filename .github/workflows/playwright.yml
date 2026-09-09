@@ -12,8 +12,8 @@ jobs:
     timeout-minutes: 60
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
+    - uses: actions/checkout@v7
+    - uses: actions/setup-node@v7
       with:
         node-version: lts/*
     - name: Install dependencies
@@ -24,7 +24,7 @@ jobs:
       run: node --test scripts/deployment-plan.test.cjs
     - name: Run Playwright tests
       run: npx playwright test
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       if: ${{ !cancelled() }}
       with:
         name: playwright-report
@@ -42,15 +42,15 @@ jobs:
       group: netlify-playground-production
       cancel-in-progress: false
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
       with:
         fetch-depth: 0
-    - uses: actions/setup-node@v4
+    - uses: actions/setup-node@v7
       with:
         node-version: '22'
     - name: Check for undeployed playground changes
       id: plan
-      uses: actions/github-script@v7
+      uses: actions/github-script@v9
       with:
         script: |
           const { planDeployment } = require('./scripts/deployment-plan.cjs');
@@ -72,7 +72,7 @@ jobs:
     - name: Confirm commit is still current
       if: steps.plan.outputs.needed == 'true'
       id: current
-      uses: actions/github-script@v7
+      uses: actions/github-script@v9
       with:
         script: |
           const { data } = await github.rest.repos.getBranch({ ...context.repo, branch: 'main' });
@@ -85,7 +85,7 @@ jobs:
       run: netlify deploy --dir=test --prod --no-build --message "GitHub Actions $GITHUB_SHA" --json
     - name: Record successful deployment baseline
       if: steps.current.outputs.ready == 'true'
-      uses: actions/github-script@v7
+      uses: actions/github-script@v9
       with:
         script: |
           const { environment } = require('./scripts/deployment-plan.cjs');
