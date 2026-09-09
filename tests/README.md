@@ -11,6 +11,8 @@ Add `--headed` to watch the browser, or `--debug` to step through a test.
 Use `npx playwright test --project=chromium` for the entire suite.
 Generated Playwright-site examples are not part of the committed Album Filter suite.
 
+CI runs this suite before eligible playground deployments. See [deployment setup](../docs/deployment.md). Deployment-decision unit tests run separately with `node --test scripts/deployment-plan.test.cjs`.
+
 ## Coverage
 
 - `extension.spec.ts`: worker startup, opening/focus, basic filtering.

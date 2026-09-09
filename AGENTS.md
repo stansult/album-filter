@@ -35,4 +35,5 @@ See `README.md` for functionality and usage, and `tests/README.md` for test cove
 ## Playground Deployment
 
 - Netlify publishes `test/`; its configuration is in `netlify.toml`.
+- See `docs/deployment.md` for the test-gated workflow, successful-deployment baseline, and required Netlify setup.
 - Keep deployment instructions consistent with the actual Netlify configuration and GitHub Actions workflows. Do not assume that passing CI gates deployment unless that dependency is configured.

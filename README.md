@@ -70,6 +70,8 @@ The Web Store listing may lag behind the latest code due to review time.
 
 Use [Album Filter Playground](https://album-filter.stansult.com) to test long-list and auto-load behavior locally.
 
+Playground deployment uses a test-gated GitHub Actions workflow. See [deployment setup](docs/deployment.md) for required secrets and the Netlify setting needed to prevent independent builds from bypassing tests.
+
 ## Notes
 
 - Album Filter is not affiliated with or endorsed by Meta/Facebook.
