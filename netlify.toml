@@ -1,4 +1,5 @@
 [build]
   publish = "test"
   command = ""
-  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- test/ netlify.toml"
+  # Exit 0 skips deployment. Without a usable baseline, allow deployment.
+  ignore = 'if [ -z "$CACHED_COMMIT_REF" ] || [ -z "$COMMIT_REF" ] || [ "$CACHED_COMMIT_REF" = "$COMMIT_REF" ]; then exit 1; else git diff --quiet "$CACHED_COMMIT_REF" "$COMMIT_REF" -- test/ netlify.toml; fi'
