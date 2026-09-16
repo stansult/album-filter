@@ -49,12 +49,13 @@ When functionality, labels, terminology, capabilities, or limitations change, up
 Canonical project documentation:
 
 - [Test coverage and limitations](tests/README.md)
+- [Bug reporting and lifecycle](docs/bug-reporting.md)
 - [Playground deployment](docs/deployment.md)
 - [Chrome Web Store release workflow](docs/chrome-web-store-release.md)
 - [Release-bookkeeping approach](docs/release-bookkeeping-approach.md)
 - [Privacy policy](PRIVACY.md)
 
-Report reproducible bugs through [GitHub Issues](https://github.com/stansult/album-filter/issues). The structured bug lifecycle and severity guidance will be added separately.
+Report reproducible problems through the [bug-report form and lifecycle](docs/bug-reporting.md). Preserve reproduction, regression, fix, release, and live-verification evidence when applicable.
 
 ## Review and commit
 
