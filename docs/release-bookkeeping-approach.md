@@ -14,6 +14,8 @@ webstore-v<manifest version>
 
 For example, Chrome Web Store version `0.1.5` is recorded by `webstore-v0.1.5` on the exact commit that produced the published package.
 
+`CHANGELOG.md` serves a different purpose: it summarizes user-visible changes by release. A changelog entry does not prove that a package was uploaded or published.
+
 ## Core rule
 
 Create the tag only after the Chrome Developer Dashboard confirms that the version is live. Building a ZIP, uploading it, or submitting it for review is not publication and must not create the tag.
@@ -57,13 +59,15 @@ git push origin refs/tags/webstore-v<version>
 5. Upload the package, update any listing metadata, and submit it for review.
 6. Wait until the new version is shown as published/live.
 7. Run `npm run release:record` from the same clean, synchronized commit.
-8. Run `npm run release:status`; runtime and listing files should report `unchanged`.
+8. Finalize the version and confirmed-live date in `CHANGELOG.md`, then commit and push that documentation-only update. Use the exact publication date instead when it is known.
+9. Run `npm run release:status`; runtime and listing files should report `unchanged`.
 
 ## Files used in Album Filter
 
 - `scripts/release-bookkeeping.cjs`: status and record implementation
 - `scripts/release-bookkeeping.test.cjs`: version, comparison, tagging, and safety-check tests
 - `package.json`: `release:status` and `release:record` commands
+- `CHANGELOG.md`: user-visible release history
 - `docs/chrome-web-store-release.md`: project-specific operational release workflow
 - `manifest.json`: authoritative Chrome extension version
 - `docs/description.txt`: source for the Web Store description

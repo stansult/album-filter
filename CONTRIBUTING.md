@@ -44,12 +44,13 @@ Document the exception when handing off the change.
 
 ## Keep public documentation synchronized
 
-When functionality, labels, terminology, capabilities, or limitations change, update both `README.md` and the Chrome Web Store listing source at `docs/description.txt`. Keep release-specific history out of the permanent store description.
+When functionality, labels, terminology, capabilities, or limitations change, update `README.md`, the Chrome Web Store listing source at `docs/description.txt`, and the **Unreleased** section of `CHANGELOG.md` as applicable. Keep the permanent store description focused on current behavior; use the changelog for release-specific history and link the relevant bug when available.
 
 Canonical project documentation:
 
 - [Test coverage and limitations](tests/README.md)
 - [Bug reporting and lifecycle](docs/bug-reporting.md)
+- [User-visible changelog](CHANGELOG.md)
 - [Playground deployment](docs/deployment.md)
 - [Chrome Web Store release workflow](docs/chrome-web-store-release.md)
 - [Release-bookkeeping approach](docs/release-bookkeeping-approach.md)

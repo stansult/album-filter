@@ -77,6 +77,7 @@ Playground deployment uses a test-gated GitHub Actions workflow. See [deployment
 ## Engineering and QA process
 
 - [Contributing guide](CONTRIBUTING.md): setup, verification, documentation, and review expectations
+- [Changelog](CHANGELOG.md): user-visible changes by published Web Store version
 - [Test guide](tests/README.md): automated coverage, limitations, focused commands, traces, and manual checks
 - [GitHub Actions workflow](.github/workflows/playwright.yml) and [deployment guide](docs/deployment.md): test-gated playground publishing
 - [Bug-reporting guide](docs/bug-reporting.md): report form, severity, lifecycle, regression evidence, and release verification

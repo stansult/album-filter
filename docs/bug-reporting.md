@@ -41,7 +41,7 @@ Maintainers assign or revise severity after reproduction. A narrowly reproducibl
 6. **Published and verified:** verify the behavior in the live target and record the result. For extension runtime bugs, the Chrome Web Store version must be live—not merely uploaded or under review.
 7. **Closed:** close a release bug only after live verification, or close earlier with one of the explicit non-fix outcomes above.
 
-When applicable, keep the issue connected to the regression test, fix commit, user-visible changelog entry, Web Store submission/publication record, and final verification. See the [test guide](../tests/README.md) and [Chrome Web Store release workflow](chrome-web-store-release.md) for the corresponding commands and release states.
+When applicable, keep the issue connected to the regression test, fix commit, user-visible [changelog](../CHANGELOG.md) entry, Web Store submission/publication record, and final verification. See the [test guide](../tests/README.md) and [Chrome Web Store release workflow](chrome-web-store-release.md) for the corresponding commands and release states.
 
 ## Regression verification
 
@@ -53,4 +53,3 @@ npm run test:e2e
 ```
 
 Record test failures and passes accurately. A passing extension assertion is not enough when the reported behavior also depends on an unverified playground assumption.
-
