@@ -1,6 +1,13 @@
 # Album Filter browser tests
 
-Run the new regression tests and record traces, including successful tests:
+Run the complete Node unit/tooling and browser suites:
+
+```bash
+npm run test:unit
+npm run test:e2e
+```
+
+Use `npm run test:e2e:headed` to watch the complete browser suite. For a focused regression run that records traces, including successful tests:
 
 ```bash
 npx playwright test filtering.spec.ts loading.spec.ts loading-transitions.spec.ts dimming.spec.ts --project=chromium --trace on
@@ -11,7 +18,9 @@ Add `--headed` to watch the browser, or `--debug` to step through a test.
 Use `npx playwright test --project=chromium` for the entire suite.
 Generated Playwright-site examples are not part of the committed Album Filter suite.
 
-CI runs this suite before eligible playground deployments. See [deployment setup](../docs/deployment.md). Deployment-decision unit tests run separately with `node --test scripts/deployment-plan.test.cjs`. Chrome Web Store release-tool tests run with `node --test scripts/package-extension.test.cjs scripts/release-bookkeeping.test.cjs`; packaging tests use temporary fixtures without changing the real manifest or `dist/`, and bookkeeping tests mock Git operations.
+Playwright writes the local HTML report to `playwright-report/index.html`. Traces and other per-test artifacts are stored beneath `test-results/`; open a trace with `npx playwright show-trace <trace.zip>` or open the HTML report with `npx playwright show-report`.
+
+CI runs both standard suites before eligible playground deployments. See [deployment setup](../docs/deployment.md). `npm run test:unit` discovers the deployment-decision, packaging, and release-bookkeeping tests in `scripts/*.test.cjs`; packaging tests use temporary fixtures without changing the real manifest or `dist/`, and bookkeeping tests mock Git operations.
 
 ## Coverage
 

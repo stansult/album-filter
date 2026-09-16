@@ -16,14 +16,16 @@ Load the repository root as an unpacked extension in Chrome for manual checks. S
 Run the complete Node tooling suite:
 
 ```bash
-node --test scripts/deployment-plan.test.cjs scripts/package-extension.test.cjs scripts/release-bookkeeping.test.cjs
+npm run test:unit
 ```
 
 Run the complete Chromium suite:
 
 ```bash
-npx playwright test --project=chromium
+npm run test:e2e
 ```
+
+Use `npm run test:e2e:headed` to watch the complete browser suite. The HTML report is written to `playwright-report/`; traces are written beneath `test-results/` when enabled or captured for a retry. See [tests/README.md](tests/README.md) for focused commands and report/trace viewing.
 
 Run both suites before pushing changes to extension code, configuration, workflows, the manifest, package or release tooling, playground fixtures, or tests. Recheck the relevant regression before committing a reported fix. See [tests/README.md](tests/README.md) for focused commands, coverage, limitations, traces, and the manual playground check.
 

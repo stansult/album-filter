@@ -1,7 +1,7 @@
 # Test-Gated Playground Deployment
 
-The workflow in `.github/workflows/playwright.yml` runs deployment-decision checks
-and the Chromium Playwright suite on pushes and pull requests to main/master.
+The workflow in `.github/workflows/playwright.yml` runs the complete unit/tooling
+and Chromium Playwright suites on pushes and pull requests to `main`.
 Tests run even when deployment is unnecessary. Pull requests never deploy.
 
 After tests pass on `main`, the deployment job checks `test/` and `netlify.toml`
@@ -41,4 +41,4 @@ Official instructions: [GitHub secrets](https://docs.github.com/en/actions/how-t
 - A playground change should publish only after tests pass. Fixing failed tests in a later commit must still publish any pending playground changes.
 - Retry a failed workflow or use its **Run workflow** action on `main` after fixing secrets or service availability. It still runs tests and checks for pending changes.
 - Avoid manual Netlify uploads or rollbacks while relying on this baseline: they do not update the GitHub deployment record.
-- Run decision tests locally with `node --test scripts/deployment-plan.test.cjs`.
+- Run the complete unit/tooling suite locally with `npm run test:unit`.
