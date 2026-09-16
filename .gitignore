@@ -4,6 +4,7 @@ node_modules/
 .DS_Store
 test/fb/
 screenshots/
+docs/handoff.local.md
 
 # Local Netlify folder
 .netlify

@@ -74,6 +74,14 @@ Use [Album Filter Playground](https://album-filter.stansult.com) to test long-li
 
 Playground deployment uses a test-gated GitHub Actions workflow. See [deployment setup](docs/deployment.md) for required secrets and the Netlify setting needed to prevent independent builds from bypassing tests.
 
+## Engineering and QA process
+
+- [Contributing guide](CONTRIBUTING.md): setup, verification, documentation, and review expectations
+- [Test guide](tests/README.md): automated coverage, limitations, focused commands, traces, and manual checks
+- [GitHub Actions workflow](.github/workflows/playwright.yml) and [deployment guide](docs/deployment.md): test-gated playground publishing
+- [GitHub Issues](https://github.com/stansult/album-filter/issues): current bug-reporting entry point
+- [Chrome Web Store release workflow](docs/chrome-web-store-release.md): packaging, review, publication, and release bookkeeping
+
 ## Notes
 
 - Album Filter is not affiliated with or endorsed by Meta/Facebook.
