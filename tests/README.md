@@ -25,7 +25,7 @@ CI runs both standard suites before eligible playground deployments. See [deploy
 ## Coverage
 
 - `extension.spec.ts`: worker startup, opening/focus, basic filtering.
-- `playground.spec.ts`: playground availability.
+- `playground.spec.ts`: extension-free contracts for playground availability, configured batches, stable DOM markers, seeded generation, manual and automatic loading, Stop, completion, dataset reset, and responsive columns.
 - `filtering.spec.ts`: complete visible/hidden sets, case/whitespace, all-word and quoted-phrase searches, changing/clearing queries, zero results, and close/reopen via button, Escape, and toolbar action.
 - `loading.spec.ts`: newly loaded matches/nonmatches, Rescan not starting auto-load, completion, Stop, and closing during an in-flight batch.
 - `loading-transitions.spec.ts`: changing a query during a load, clearing during pending hide, restarting Auto-load after Stop, and regenerating the list while filtering.
@@ -33,8 +33,21 @@ CI runs both standard suites before eligible playground deployments. See [deploy
 
 ## Test boundaries
 
-Tests load the actual unpacked extension and invoke its toolbar action through CDP.
-Each test receives a fresh temporary browser profile. The fixture honors headed/headless and viewport settings.
+Extension behavior tests load the actual unpacked extension and invoke its toolbar action through CDP. `playground.spec.ts` deliberately uses Playwright's ordinary browser fixture, without loading Album Filter, so it can detect fixture failures independently. Each extension test receives a fresh temporary browser profile. The fixtures honor headed/headless and viewport settings.
+
+## Playground dependency matrix
+
+| Playground contract | Independent coverage | Extension scenarios that depend on it |
+| --- | --- | --- |
+| Configured total and initial batch size | Initial-batch contract | Loading, transitions, and dimming |
+| Seeded deterministic album generation | Seed contract | Loading and dimming datasets |
+| Album-card, title, and count markers | DOM-marker contract | Discovery and every filtering assertion |
+| Manual `Load next batch` behavior | Manual-loading contract | New-batch filtering and pending-card dimming |
+| Auto-load batch progression | Auto-load contract | Extension Auto-load completion and restart |
+| Stop permits the in-flight batch but prevents later scheduling | Stop contract | Extension Stop and close-panel behavior |
+| Explicit end marker | Manual and Auto-load completion contracts | Extension completion detection |
+| Generate list replaces and resets the dataset | Dataset-reset contract | Filtering across regenerated lists |
+| Configured desktop and responsive mobile columns | Column contracts | Compact-layout restoration |
 
 Search tests use 20 explicitly named albums. Loading tests use the playground's seeded generator and real batch-loading functions. The scroll sentinel is hidden in these controlled tests so browser height or filtering-induced layout changes cannot trigger additional natural loads. This does not test natural infinite scrolling.
 
