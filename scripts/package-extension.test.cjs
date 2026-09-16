@@ -11,8 +11,6 @@ const runtimeFiles = [
   'manifest.json',
   'background.js',
   'content.js',
-  'popup.html',
-  'popup.js',
   'icon16.png',
   'icon32.png',
   'icon48.png',
