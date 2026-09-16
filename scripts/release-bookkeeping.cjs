@@ -1,7 +1,9 @@
 const { readFileSync } = require('node:fs');
 const { spawnSync } = require('node:child_process');
+const { createHash } = require('node:crypto');
 
 const tagPrefix = 'webstore-v';
+const submissionTagPrefix = 'webstore-submitted-v';
 const runtimeFiles = [
   'manifest.json',
   'background.js',
@@ -62,30 +64,80 @@ function releaseStatus({ git, version }) {
   };
 }
 
-function recordRelease({ git, version }) {
-  parseVersion(version);
+function requireCleanSyncedMain(git) {
   if (git.output(['status', '--porcelain'])) throw new Error('Working tree must be clean.');
   if (git.output(['branch', '--show-current']) !== 'main') throw new Error('Release must be recorded from main.');
 
   const head = git.output(['rev-parse', 'HEAD']);
   const remoteHead = git.output(['rev-parse', 'origin/main']);
   if (head !== remoteHead) throw new Error('HEAD must match origin/main.');
+  return head;
+}
 
-  const tag = `${tagPrefix}${version}`;
-  const tagStatus = git.status(['show-ref', '--verify', '--quiet', `refs/tags/${tag}`]);
-  if (tagStatus === 0) {
-    throw new Error(`Tag already exists: ${tag}`);
-  }
-  if (tagStatus !== 1) throw new Error(`Could not check tag: ${tag}`);
+function tagExists(git, tag) {
+  const status = git.status(['show-ref', '--verify', '--quiet', `refs/tags/${tag}`]);
+  if (status === 0) return true;
+  if (status === 1) return false;
+  throw new Error(`Could not check tag: ${tag}`);
+}
 
+function requireNewerThanLatestRelease(git, version) {
   const previous = latestReleaseTag(git);
   if (previous && compareVersions(version, previous.slice(tagPrefix.length)) <= 0) {
     throw new Error(`Version ${version} must be newer than ${previous.slice(tagPrefix.length)}.`);
   }
+}
 
-  git.run(['tag', '-a', tag, '-m', `Chrome Web Store ${version}`]);
+function recordSubmission({ git, version, archivePath, readFile = readFileSync }) {
+  parseVersion(version);
+  const head = requireCleanSyncedMain(git);
+  requireNewerThanLatestRelease(git, version);
+
+  const tag = `${submissionTagPrefix}${version}`;
+  if (tagExists(git, tag)) throw new Error(`Tag already exists: ${tag}`);
+
+  const releaseTag = `${tagPrefix}${version}`;
+  if (tagExists(git, releaseTag)) throw new Error(`Release tag already exists: ${releaseTag}`);
+
+  let archive;
+  try {
+    archive = readFile(archivePath);
+  } catch {
+    throw new Error(`Could not read package: ${archivePath}`);
+  }
+  const sha256 = createHash('sha256').update(archive).digest('hex');
+  const message = [
+    `Chrome Web Store submission ${version}`,
+    '',
+    `Commit: ${head}`,
+    `ZIP: ${archivePath}`,
+    `SHA-256: ${sha256}`,
+  ].join('\n');
+
+  git.run(['tag', '-a', tag, '-m', message, head]);
   git.run(['push', 'origin', `refs/tags/${tag}`]);
-  return { version, tag, head };
+  return { version, tag, head, archivePath, sha256 };
+}
+
+function recordRelease({ git, version }) {
+  parseVersion(version);
+  requireCleanSyncedMain(git);
+
+  const tag = `${tagPrefix}${version}`;
+  if (tagExists(git, tag)) throw new Error(`Tag already exists: ${tag}`);
+
+  requireNewerThanLatestRelease(git, version);
+
+  const submissionTag = `${submissionTagPrefix}${version}`;
+  if (!tagExists(git, submissionTag)) {
+    throw new Error(`Submission tag not found: ${submissionTag}`);
+  }
+  const submittedHead = git.output(['rev-parse', `${submissionTag}^{commit}`]);
+
+  const message = `Chrome Web Store ${version}\n\nSubmission: ${submissionTag}`;
+  git.run(['tag', '-a', tag, '-m', message, submittedHead]);
+  git.run(['push', 'origin', `refs/tags/${tag}`]);
+  return { version, tag, submissionTag, head: submittedHead };
 }
 
 function createGit() {
@@ -118,8 +170,9 @@ if (require.main === module) {
   try {
     const command = process.argv[2];
     const git = createGit();
-    const version = manifestVersion();
+    const version = command === 'record' && process.argv[3] ? process.argv[3] : manifestVersion();
     if (command === 'status') {
+      if (process.argv[3]) throw new Error('Usage: release-bookkeeping.cjs status');
       const result = releaseStatus({ git, version });
       if (!result.tag) {
         console.log(`No Chrome Web Store release tag recorded. Current manifest: ${version}.`);
@@ -129,11 +182,18 @@ if (require.main === module) {
         console.log(`Runtime files: ${result.runtimeChanged ? 'changed' : 'unchanged'}`);
         console.log(`Store description: ${result.listingChanged ? 'changed' : 'unchanged'}`);
       }
+    } else if (command === 'submit') {
+      if (process.argv[3]) throw new Error('Usage: release-bookkeeping.cjs submit');
+      const archivePath = `dist/album-filter-${version}.zip`;
+      const result = recordSubmission({ git, version, archivePath });
+      console.log(`Recorded ${result.tag} at ${result.head} and pushed it to origin.`);
+      console.log(`ZIP SHA-256: ${result.sha256}`);
     } else if (command === 'record') {
+      if (process.argv[4]) throw new Error('Usage: release-bookkeeping.cjs record [version]');
       const result = recordRelease({ git, version });
       console.log(`Recorded ${result.tag} at ${result.head} and pushed it to origin.`);
     } else {
-      throw new Error('Usage: release-bookkeeping.cjs <status|record>');
+      throw new Error('Usage: release-bookkeeping.cjs <status|submit|record>');
     }
   } catch (error) {
     console.error(`Release bookkeeping failed: ${error.message}`);
@@ -141,4 +201,10 @@ if (require.main === module) {
   }
 }
 
-module.exports = { compareVersions, latestReleaseTag, recordRelease, releaseStatus };
+module.exports = {
+  compareVersions,
+  latestReleaseTag,
+  recordRelease,
+  recordSubmission,
+  releaseStatus,
+};

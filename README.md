@@ -66,6 +66,8 @@ The Web Store listing may lag behind the latest code due to review time.
 - Create upload zip: `npm run package`
 - Bump patch + package: `npm run package:patch`
 - Check changes since the recorded public release: `npm run release:status`
+- After uploading the exact ZIP, record its commit and SHA-256: `npm run release:record-submission`
+- After that version is confirmed live, record publication: `npm run release:record`
 - See the [Chrome Web Store release workflow](docs/chrome-web-store-release.md).
 
 #### Album Filter Playground

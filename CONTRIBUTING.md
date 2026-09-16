@@ -73,4 +73,4 @@ Use `origin/main` as the default push target unless the work explicitly requires
 
 Netlify publishes only the playground in `test/`; it does not publish the Chrome extension. Follow the [test-gated deployment guide](docs/deployment.md) and keep it consistent with `netlify.toml` and the GitHub Actions workflow.
 
-For Chrome Web Store packages, follow the [release workflow](docs/chrome-web-store-release.md). Treat package creation, submission for review, and confirmed publication as separate states. Record a published release only after the Developer Dashboard shows that version as live.
+For Chrome Web Store packages, follow the [release workflow](docs/chrome-web-store-release.md). Treat package creation, submission for review, and confirmed publication as separate states. Immediately after uploading the exact ZIP, use `npm run release:record-submission` to preserve its commit and SHA-256. Run `npm run release:record` only after the Developer Dashboard shows that version as live; publication will be attached to the preserved submission commit even if `main` has advanced.
