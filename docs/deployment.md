@@ -16,9 +16,10 @@ Deployment jobs are serialized and check that their commit is still main's tip
 before publishing. An already-started upload is allowed to finish; the next
 eligible run can publish the newer tested commit afterward.
 
-Netlify CLI publishes only `test/` with `--prod --no-build`. This does not package
-or publish the Chrome extension. A successful upload is followed by a GitHub
-deployment record; if recording fails, a later run may safely redeploy.
+Netlify CLI publishes only `test/` with `--prod --no-build` and uses the tested
+commit subject as the Netlify deploy title. This does not package or publish the
+Chrome extension. A successful upload is followed by a GitHub deployment record;
+if recording fails, a later run may safely redeploy.
 
 ## One-Time Setup
 
