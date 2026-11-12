@@ -4,6 +4,8 @@ const { createHash } = require('node:crypto');
 
 const tagPrefix = 'webstore-v';
 const submissionTagPrefix = 'webstore-submitted-v';
+const publicationWorkflow = 'webstore-publication.yml';
+const repository = 'stansult/album-filter';
 const runtimeFiles = [
   'manifest.json',
   'background.js',
@@ -86,7 +88,33 @@ function requireNewerThanLatestRelease(git, version) {
   }
 }
 
-function recordSubmission({ git, version, archivePath, readFile = readFileSync }) {
+function preflightPublicationPolling(github) {
+  if (!github || typeof github.run !== 'function') {
+    throw new Error('GitHub CLI preflight failed: GitHub CLI is unavailable.');
+  }
+  try {
+    github.run(['auth', 'status']);
+    github.run(['workflow', 'view', publicationWorkflow, '--repo', repository]);
+  } catch (error) {
+    throw new Error(`GitHub CLI preflight failed: ${error.message}`);
+  }
+}
+
+function startPublicationPolling({ github, submission }) {
+  try {
+    github.run(['workflow', 'enable', publicationWorkflow, '--repo', repository]);
+    github.run(['workflow', 'run', publicationWorkflow, '--repo', repository]);
+  } catch (error) {
+    throw new Error(
+      `${submission} was pushed, but Web Store publication polling could not be started: ${error.message}\n`
+      + 'Recovery:\n'
+      + `  gh workflow enable ${publicationWorkflow} --repo ${repository}\n`
+      + `  gh workflow run ${publicationWorkflow} --repo ${repository}`
+    );
+  }
+}
+
+function recordSubmission({ git, github, version, archivePath, readFile = readFileSync }) {
   parseVersion(version);
   const head = requireCleanSyncedMain(git);
   requireNewerThanLatestRelease(git, version);
@@ -112,8 +140,10 @@ function recordSubmission({ git, version, archivePath, readFile = readFileSync }
     `SHA-256: ${sha256}`,
   ].join('\n');
 
+  preflightPublicationPolling(github);
   git.run(['tag', '-a', tag, '-m', message, head]);
   git.run(['push', 'origin', `refs/tags/${tag}`]);
+  startPublicationPolling({ github, submission: tag });
   return { version, tag, head, archivePath, sha256 };
 }
 
@@ -160,6 +190,16 @@ function createGit() {
   };
 }
 
+function createGithub() {
+  return {
+    run(args) {
+      const result = spawnSync('gh', args, { encoding: 'utf8' });
+      if (result.error) throw result.error;
+      if (result.status !== 0) throw new Error(result.stderr.trim() || `gh ${args[0]} failed`);
+    },
+  };
+}
+
 function manifestVersion() {
   return JSON.parse(readFileSync('manifest.json', 'utf8')).version;
 }
@@ -183,7 +223,12 @@ if (require.main === module) {
     } else if (command === 'submit') {
       if (process.argv[3]) throw new Error('Usage: release-bookkeeping.cjs submit');
       const archivePath = `dist/album-filter-${version}.zip`;
-      const result = recordSubmission({ git, version, archivePath });
+      const result = recordSubmission({
+        git,
+        github: createGithub(),
+        version,
+        archivePath,
+      });
       console.log(`Recorded ${result.tag} at ${result.head} and pushed it to origin.`);
       console.log(`ZIP SHA-256: ${result.sha256}`);
     } else if (command === 'record') {

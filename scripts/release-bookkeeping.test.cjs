@@ -17,6 +17,7 @@ function fakeGit({
   tags = '',
   existingTags = [],
   diffs = {},
+  failRun = null,
 } = {}) {
   const runs = [];
   const outputs = [];
@@ -45,6 +46,18 @@ function fakeGit({
     },
     run(args) {
       runs.push(args);
+      if (failRun?.(args)) throw new Error(`git ${args[0]} failed`);
+    },
+  };
+}
+
+function fakeGithub({ failRun = null } = {}) {
+  const runs = [];
+  return {
+    runs,
+    run(args) {
+      runs.push(args);
+      if (failRun?.(args)) throw new Error(`gh ${args.join(' ')} failed`);
     },
   };
 }
@@ -74,10 +87,12 @@ test('status reports runtime and listing changes from the latest release tag', (
 
 test('submission records the exact commit and ZIP SHA-256 in an annotated tag', () => {
   const git = fakeGit({ tags: 'webstore-v0.1.4' });
+  const github = fakeGithub();
   const archive = Buffer.from('uploaded zip bytes');
   const sha256 = createHash('sha256').update(archive).digest('hex');
   assert.deepEqual(recordSubmission({
     git,
+    github,
     version: '0.1.5',
     archivePath: 'dist/album-filter-0.1.5.zip',
     readFile: () => archive,
@@ -95,6 +110,92 @@ test('submission records the exact commit and ZIP SHA-256 in an annotated tag', 
       'abc',
     ],
     ['push', 'origin', 'refs/tags/webstore-submitted-v0.1.5'],
+  ]);
+  assert.deepEqual(github.runs, [
+    ['auth', 'status'],
+    ['workflow', 'view', 'webstore-publication.yml', '--repo', 'stansult/album-filter'],
+    ['workflow', 'enable', 'webstore-publication.yml', '--repo', 'stansult/album-filter'],
+    ['workflow', 'run', 'webstore-publication.yml', '--repo', 'stansult/album-filter'],
+  ]);
+});
+
+test('submission preflight failure happens before tag creation', () => {
+  const git = fakeGit({ tags: 'webstore-v0.1.4' });
+  const github = fakeGithub({ failRun: args => args[0] === 'auth' });
+  assert.throws(() => recordSubmission({
+    git,
+    github,
+    version: '0.1.5',
+    archivePath: 'dist/album-filter-0.1.5.zip',
+    readFile: () => Buffer.from('zip'),
+  }), /GitHub CLI preflight failed/);
+  assert.deepEqual(git.runs, []);
+  assert.deepEqual(github.runs, [['auth', 'status']]);
+});
+
+test('submission verifies publication workflow visibility before tag creation', () => {
+  const git = fakeGit({ tags: 'webstore-v0.1.4' });
+  const github = fakeGithub({
+    failRun: args => args[0] === 'workflow' && args[1] === 'view',
+  });
+  assert.throws(() => recordSubmission({
+    git,
+    github,
+    version: '0.1.5',
+    archivePath: 'dist/album-filter-0.1.5.zip',
+    readFile: () => Buffer.from('zip'),
+  }), /GitHub CLI preflight failed/);
+  assert.deepEqual(git.runs, []);
+  assert.deepEqual(github.runs, [
+    ['auth', 'status'],
+    ['workflow', 'view', 'webstore-publication.yml', '--repo', 'stansult/album-filter'],
+  ]);
+});
+
+test('submission tag push failure does not activate publication polling', () => {
+  const git = fakeGit({
+    tags: 'webstore-v0.1.4',
+    failRun: args => args[0] === 'push',
+  });
+  const github = fakeGithub();
+  assert.throws(() => recordSubmission({
+    git,
+    github,
+    version: '0.1.5',
+    archivePath: 'dist/album-filter-0.1.5.zip',
+    readFile: () => Buffer.from('zip'),
+  }), /git push failed/);
+  assert.deepEqual(github.runs, [
+    ['auth', 'status'],
+    ['workflow', 'view', 'webstore-publication.yml', '--repo', 'stansult/album-filter'],
+  ]);
+});
+
+test('submission reports exact recovery commands when activation fails after tag push', () => {
+  const git = fakeGit({ tags: 'webstore-v0.1.4' });
+  const github = fakeGithub({
+    failRun: args => args[0] === 'workflow' && args[1] === 'run',
+  });
+  assert.throws(() => recordSubmission({
+    git,
+    github,
+    version: '0.1.5',
+    archivePath: 'dist/album-filter-0.1.5.zip',
+    readFile: () => Buffer.from('zip'),
+  }), error => {
+    assert.match(error.message, /webstore-submitted-v0\.1\.5 was pushed/);
+    assert.match(
+      error.message,
+      /gh workflow enable webstore-publication\.yml --repo stansult\/album-filter/
+    );
+    assert.match(
+      error.message,
+      /gh workflow run webstore-publication\.yml --repo stansult\/album-filter/
+    );
+    return true;
+  });
+  assert.deepEqual(git.runs.at(-1), [
+    'push', 'origin', 'refs/tags/webstore-submitted-v0.1.5',
   ]);
 });
 

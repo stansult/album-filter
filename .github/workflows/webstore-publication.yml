@@ -1,0 +1,44 @@
+name: Web Store publication
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 */6 * * *'
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Check live Web Store package
+        id: publication
+        run: node scripts/webstore-publication-check.cjs
+      - name: Summarize publication state
+        if: steps.publication.outputs.pending == 'true'
+        env:
+          EXPECTED_VERSION: ${{ steps.publication.outputs.expected_version }}
+          LIVE_VERSION: ${{ steps.publication.outputs.live_version }}
+          PUBLISHED: ${{ steps.publication.outputs.published }}
+        run: |
+          {
+            echo '## Chrome Web Store publication'
+            echo
+            echo "Submitted version: $EXPECTED_VERSION"
+            echo "Live update-service version: $LIVE_VERSION"
+            echo "Publication detected: $PUBLISHED"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Disable publication polling
+        if: steps.publication.outputs.published == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow disable webstore-publication.yml --repo "$GITHUB_REPOSITORY"
